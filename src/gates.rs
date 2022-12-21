@@ -293,7 +293,7 @@ impl Gate for BUFGate{
 }
 
 
-pub fn parsegates() -> (GateStack,Vec<u32>,Vec<u32>) {
+pub fn parsegates() -> (GateStack, HashMap<u32,Wire>, Vec<u32>,Vec<u32>) {
     let mut stack = GateStack {gatestack: vec![]};
     let mut instack: Vec<u32> = vec![];
     let mut outstack: Vec<u32> = vec![];
@@ -310,7 +310,7 @@ pub fn parsegates() -> (GateStack,Vec<u32>,Vec<u32>) {
                 match gatetype {
                     None => {
                         println!("Error, no gate type");
-                        return (stack, instack, outstack)
+                        return (stack, wires, instack, outstack)
                     },
                     Some(gateop) => {
                         match gateop {
@@ -499,7 +499,7 @@ pub fn parsegates() -> (GateStack,Vec<u32>,Vec<u32>) {
                             },
                             _ => {
                                 println!("Error, invalid gate entry");
-                                return (stack, instack, outstack)
+                                return (stack, wires, instack, outstack)
                             }
                         }
                     },
@@ -508,7 +508,7 @@ pub fn parsegates() -> (GateStack,Vec<u32>,Vec<u32>) {
         }
     }
 
-    (stack, instack, outstack)
+    (stack, wires, instack, outstack)
 }
 
 fn read_lines<P>(filename: P) -> io::Result<io::Lines<io::BufReader<File>>>
