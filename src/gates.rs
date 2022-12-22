@@ -30,9 +30,9 @@ pub enum WireType{
 }
 
 pub struct Wire{
-    net: u32,
-    fanout: Vec<u32>,
-    wiretype: WireType,
+    pub net: u32,
+    pub fanout: Vec<u32>,
+    pub wiretype: WireType,
 }
 
 fn invert(value: &FiveLogic) -> FiveLogic {
@@ -294,7 +294,7 @@ impl Gate for BUFGate{
 
 
 pub fn parsegates() -> (GateStack, HashMap<u32,Wire>, Vec<u32>,Vec<u32>) {
-    let mut stack = GateStack {gatestack: vec![]};
+    let mut gates = GateStack {gatestack: vec![]};
     let mut instack: Vec<u32> = vec![];
     let mut outstack: Vec<u32> = vec![];
     let mut gatecount: u32 = 0;
@@ -310,7 +310,7 @@ pub fn parsegates() -> (GateStack, HashMap<u32,Wire>, Vec<u32>,Vec<u32>) {
                 match gatetype {
                     None => {
                         println!("Error, no gate type");
-                        return (stack, wires, instack, outstack)
+                        return (gates, wires, instack, outstack)
                     },
                     Some(gateop) => {
                         match gateop {
@@ -359,7 +359,7 @@ pub fn parsegates() -> (GateStack, HashMap<u32,Wire>, Vec<u32>,Vec<u32>) {
 
                                 match gateop {
                                     "AND" => {
-                                        stack.gatestack.push(
+                                        gates.gatestack.push(
                                             Gates::AND(ANDGate {
                                                 net_in_a: in1,
                                                 net_in_b: in2,
@@ -371,7 +371,7 @@ pub fn parsegates() -> (GateStack, HashMap<u32,Wire>, Vec<u32>,Vec<u32>) {
                                         )
                                     },
                                     "OR" => {
-                                        stack.gatestack.push(
+                                        gates.gatestack.push(
                                             Gates::OR(ORGate {
                                                 net_in_a: in1,
                                                 net_in_b: in2,
@@ -383,7 +383,7 @@ pub fn parsegates() -> (GateStack, HashMap<u32,Wire>, Vec<u32>,Vec<u32>) {
                                         )
                                     },
                                     "NAND" => {
-                                        stack.gatestack.push(
+                                        gates.gatestack.push(
                                             Gates::NAND(NANDGate {
                                                 net_in_a: in1,
                                                 net_in_b: in2,
@@ -395,7 +395,7 @@ pub fn parsegates() -> (GateStack, HashMap<u32,Wire>, Vec<u32>,Vec<u32>) {
                                         )
                                     },
                                     "NOR" => {
-                                        stack.gatestack.push(
+                                        gates.gatestack.push(
                                             Gates::NOR(NORGate {
                                                 net_in_a: in1,
                                                 net_in_b: in2,
@@ -409,7 +409,7 @@ pub fn parsegates() -> (GateStack, HashMap<u32,Wire>, Vec<u32>,Vec<u32>) {
                                     _ => {},
                                 }
                             
-                                println!("{:?} with input nets {:?} and {:?}, output net {:?}",gateop,in1,in2,out);
+                                //println!("{:?} with input nets {:?} and {:?}, output net {:?}",gateop,in1,in2,out);
                             },
                             "INV" | "BUF" => {
                                 let in1 = FromStr::from_str(token.next().unwrap()).unwrap();
@@ -443,7 +443,7 @@ pub fn parsegates() -> (GateStack, HashMap<u32,Wire>, Vec<u32>,Vec<u32>) {
 
                                 match gateop {
                                     "INV" => {
-                                        stack.gatestack.push(
+                                        gates.gatestack.push(
                                             Gates::INV(NOTGate {
                                                 net_in_a: in1,
                                                 net_out: out,
@@ -453,7 +453,7 @@ pub fn parsegates() -> (GateStack, HashMap<u32,Wire>, Vec<u32>,Vec<u32>) {
                                         )
                                     },
                                     "BUF" => {
-                                        stack.gatestack.push(
+                                        gates.gatestack.push(
                                             Gates::BUF(BUFGate {
                                                 net_in_a: in1,
                                                 net_out: out,
@@ -465,7 +465,7 @@ pub fn parsegates() -> (GateStack, HashMap<u32,Wire>, Vec<u32>,Vec<u32>) {
                                     _ => {},
                                 }
 
-                                println!("{:?} with input net {:?}, output net {:?}",gateop,in1,out);
+                                //println!("{:?} with input net {:?}, output net {:?}",gateop,in1,out);
                             },
                             "INPUT" => {
                                 for i in token {
@@ -499,7 +499,7 @@ pub fn parsegates() -> (GateStack, HashMap<u32,Wire>, Vec<u32>,Vec<u32>) {
                             },
                             _ => {
                                 println!("Error, invalid gate entry");
-                                return (stack, wires, instack, outstack)
+                                return (gates, wires, instack, outstack)
                             }
                         }
                     },
@@ -508,7 +508,7 @@ pub fn parsegates() -> (GateStack, HashMap<u32,Wire>, Vec<u32>,Vec<u32>) {
         }
     }
 
-    (stack, wires, instack, outstack)
+    (gates, wires, instack, outstack)
 }
 
 fn read_lines<P>(filename: P) -> io::Result<io::Lines<io::BufReader<File>>>
