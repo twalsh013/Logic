@@ -2,6 +2,7 @@ use std::fs::File;
 use std::io::{self,BufRead};
 use std::path::Path;
 use std::str::FromStr;
+use std::collections::HashMap;
 
 
 #[derive(Debug, PartialEq, Clone, Copy)]
@@ -11,6 +12,27 @@ pub enum FiveLogic {
     D,
     Dnot,
     X,
+}
+
+pub enum Gates {
+    AND(ANDGate),
+    OR(ORGate),
+    NAND(NANDGate),
+    NOR(NORGate),
+    INV(NOTGate),
+    BUF(BUFGate),
+}
+
+pub enum WireType{
+    PrimaryInput,
+    PrimaryOutput,
+    Net,
+}
+
+pub struct Wire{
+    pub net: u32,
+    pub fanout: Vec<u32>,
+    pub wiretype: WireType,
 }
 
 fn invert(value: &FiveLogic) -> FiveLogic {
@@ -167,7 +189,7 @@ pub trait Gate {
 }
 
 pub struct GateStack {
-    pub gatestack: Vec<Box<dyn Gate>>,
+    pub gatestack: Vec<Gates>,
 }
 
 impl Gate for ANDGate{
@@ -271,8 +293,12 @@ impl Gate for BUFGate{
 }
 
 
-pub fn parsegates() -> GateStack {
-    let mut stack = GateStack {gatestack: vec![]};
+pub fn parsegates() -> (GateStack, HashMap<u32,Wire>, Vec<u32>,Vec<u32>) {
+    let mut gates = GateStack {gatestack: vec![]};
+    let mut instack: Vec<u32> = vec![];
+    let mut outstack: Vec<u32> = vec![];
+    let mut gatecount: u32 = 0;
+    let mut wires: HashMap<u32,Wire> = HashMap::new();
 
     if let Ok(lines) = read_lines("circuit.txt") {
         for line in lines {
@@ -284,22 +310,60 @@ pub fn parsegates() -> GateStack {
                 match gatetype {
                     None => {
                         println!("Error, no gate type");
-                        return stack
+                        return (gates, wires, instack, outstack)
                     },
                     Some(gateop) => {
                         match gateop {
                             "AND" | "OR" | "NAND" | "NOR" => {
-                                let in1 = token.next().unwrap();
-                                let in2 = token.next().unwrap();
-                                let out = token.next().unwrap();
+                                let in1 = FromStr::from_str(token.next().unwrap()).unwrap();
+                                let in2 = FromStr::from_str(token.next().unwrap()).unwrap();
+                                let out = FromStr::from_str(token.next().unwrap()).unwrap();
+
+                                if wires.contains_key(&in1) {
+                                    if let Some(thiswire) = wires.get_mut(&in1) {
+                                        thiswire.fanout.push(gatecount);
+                                    }
+                                }
+                                else {
+                                    let thiswire = Wire{net: in1, fanout: vec![gatecount], wiretype: WireType::Net};
+
+                                    wires.insert(in1, thiswire);
+
+                                }
+
+                                if wires.contains_key(&in2) {
+                                    if let Some(thiswire) = wires.get_mut(&in2) {
+                                        thiswire.fanout.push(gatecount);
+                                    }
+                                }
+                                else {
+                                    let thiswire = Wire{net: in2, fanout: vec![gatecount], wiretype: WireType::Net};
+
+                                    wires.insert(in2, thiswire);
+
+                                }
+
+                                if wires.contains_key(&out) {
+                                    if let Some(thiswire) = wires.get_mut(&out) {
+                                        thiswire.fanout.push(gatecount);
+                                    }
+                                }
+                                else {
+                                    let thiswire = Wire{net: out, fanout: vec![gatecount], wiretype: WireType::Net};
+
+                                    wires.insert(out, thiswire);
+
+                                }
+
+                                gatecount += 1;
 
                                 match gateop {
                                     "AND" => {
-                                        stack.gatestack.push(
-                                            Box::new(ANDGate {
-                                                net_in_a: FromStr::from_str(in1).unwrap(),
-                                                net_in_b: FromStr::from_str(in2).unwrap(),
-                                                net_out: FromStr::from_str(out).unwrap(),
+                                        gates.gatestack.push(
+                                            Gates::AND(ANDGate {
+                                                net_in_a: in1,
+                                                net_in_b: in2,
+                                                net_out: out,
                                                 input_a: FiveLogic::ZERO,
                                                 input_b: FiveLogic::ZERO,
                                                 output: FiveLogic::ZERO,
@@ -307,11 +371,11 @@ pub fn parsegates() -> GateStack {
                                         )
                                     },
                                     "OR" => {
-                                        stack.gatestack.push(
-                                            Box::new(ORGate {
-                                                net_in_a: FromStr::from_str(in1).unwrap(),
-                                                net_in_b: FromStr::from_str(in2).unwrap(),
-                                                net_out: FromStr::from_str(out).unwrap(),
+                                        gates.gatestack.push(
+                                            Gates::OR(ORGate {
+                                                net_in_a: in1,
+                                                net_in_b: in2,
+                                                net_out: out,
                                                 input_a: FiveLogic::ZERO,
                                                 input_b: FiveLogic::ZERO,
                                                 output: FiveLogic::ZERO,
@@ -319,11 +383,11 @@ pub fn parsegates() -> GateStack {
                                         )
                                     },
                                     "NAND" => {
-                                        stack.gatestack.push(
-                                            Box::new(NANDGate {
-                                                net_in_a: FromStr::from_str(in1).unwrap(),
-                                                net_in_b: FromStr::from_str(in2).unwrap(),
-                                                net_out: FromStr::from_str(out).unwrap(),
+                                        gates.gatestack.push(
+                                            Gates::NAND(NANDGate {
+                                                net_in_a: in1,
+                                                net_in_b: in2,
+                                                net_out: out,
                                                 input_a: FiveLogic::ZERO,
                                                 input_b: FiveLogic::ZERO,
                                                 output: FiveLogic::ZERO,
@@ -331,11 +395,11 @@ pub fn parsegates() -> GateStack {
                                         )
                                     },
                                     "NOR" => {
-                                        stack.gatestack.push(
-                                            Box::new(NORGate {
-                                                net_in_a: FromStr::from_str(in1).unwrap(),
-                                                net_in_b: FromStr::from_str(in2).unwrap(),
-                                                net_out: FromStr::from_str(out).unwrap(),
+                                        gates.gatestack.push(
+                                            Gates::NOR(NORGate {
+                                                net_in_a: in1,
+                                                net_in_b: in2,
+                                                net_out: out,
                                                 input_a: FiveLogic::ZERO,
                                                 input_b: FiveLogic::ZERO,
                                                 output: FiveLogic::ZERO,
@@ -345,28 +409,54 @@ pub fn parsegates() -> GateStack {
                                     _ => {},
                                 }
                             
-                                println!("{:?} with input nets {:?} and {:?}, output net {:?}",gateop,in1,in2,out);
+                                //println!("{:?} with input nets {:?} and {:?}, output net {:?}",gateop,in1,in2,out);
                             },
                             "INV" | "BUF" => {
-                                let in1 = token.next().unwrap();
-                                let out = token.next().unwrap();
+                                let in1 = FromStr::from_str(token.next().unwrap()).unwrap();
+                                let out = FromStr::from_str(token.next().unwrap()).unwrap();
                                 
+                                if wires.contains_key(&in1) {
+                                    if let Some(thiswire) = wires.get_mut(&in1) {
+                                        thiswire.fanout.push(gatecount);
+                                    }
+                                }
+                                else {
+                                    let thiswire = Wire{net: in1, fanout: vec![gatecount], wiretype: WireType::Net};
+
+                                    wires.insert(in1, thiswire);
+
+                                }
+
+                                if wires.contains_key(&out) {
+                                    if let Some(thiswire) = wires.get_mut(&out) {
+                                        thiswire.fanout.push(gatecount);
+                                    }
+                                }
+                                else {
+                                    let thiswire = Wire{net: out, fanout: vec![gatecount], wiretype: WireType::Net};
+
+                                    wires.insert(out, thiswire);
+
+                                }
+
+                                gatecount += 1;
+
                                 match gateop {
                                     "INV" => {
-                                        stack.gatestack.push(
-                                            Box::new(NOTGate {
-                                                net_in_a: FromStr::from_str(in1).unwrap(),
-                                                net_out: FromStr::from_str(out).unwrap(),
+                                        gates.gatestack.push(
+                                            Gates::INV(NOTGate {
+                                                net_in_a: in1,
+                                                net_out: out,
                                                 input_a: FiveLogic::ZERO,
                                                 output: FiveLogic::ZERO,
                                             })
                                         )
                                     },
                                     "BUF" => {
-                                        stack.gatestack.push(
-                                            Box::new(BUFGate {
-                                                net_in_a: FromStr::from_str(in1).unwrap(),
-                                                net_out: FromStr::from_str(out).unwrap(),
+                                        gates.gatestack.push(
+                                            Gates::BUF(BUFGate {
+                                                net_in_a: in1,
+                                                net_out: out,
                                                 input_a: FiveLogic::ZERO,
                                                 output: FiveLogic::ZERO,
                                             })
@@ -375,11 +465,41 @@ pub fn parsegates() -> GateStack {
                                     _ => {},
                                 }
 
-                                println!("{:?} with input net {:?}, output net {:?}",gateop,in1,out);
+                                //println!("{:?} with input net {:?}, output net {:?}",gateop,in1,out);
+                            },
+                            "INPUT" => {
+                                for i in token {
+                                    let input = i.parse::<i32>().unwrap();
+                                    
+                                    let wirenum = input as u32;
+
+                                    if let Some(thiswire) = wires.get_mut(&wirenum) {
+                                        thiswire.wiretype = WireType::PrimaryInput;
+                                    }
+                                    
+                                    if input != -1 {
+                                        instack.push(input as u32);
+                                    }
+                                }
+                            },
+                            "OUTPUT" => {
+                                for i in token {
+                                    let output = i.parse::<i32>().unwrap();
+
+                                    let wirenum = output as u32;
+
+                                    if let Some(thiswire) = wires.get_mut(&wirenum) {
+                                        thiswire.wiretype = WireType::PrimaryOutput;
+                                    }
+
+                                    if output != -1 {
+                                        outstack.push(output as u32);
+                                    }
+                                }
                             },
                             _ => {
                                 println!("Error, invalid gate entry");
-                                return stack
+                                return (gates, wires, instack, outstack)
                             }
                         }
                     },
@@ -388,7 +508,7 @@ pub fn parsegates() -> GateStack {
         }
     }
 
-    stack
+    (gates, wires, instack, outstack)
 }
 
 fn read_lines<P>(filename: P) -> io::Result<io::Lines<io::BufReader<File>>>
