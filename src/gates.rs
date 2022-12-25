@@ -351,7 +351,7 @@ pub fn parsegates(filename: &str) -> (GateStack, HashMap<u32,Wire>, Vec<u32>,Vec
                                     }
                                 }
                                 else {
-                                    let thiswire = Wire{net: out, fanout: vec![gatecount], wiretype: WireType::Net, level: FiveLogic::X};
+                                    let thiswire = Wire{net: out, fanout: vec![], wiretype: WireType::Net, level: FiveLogic::X};
 
                                     wires.insert(out, thiswire);
 
@@ -366,9 +366,9 @@ pub fn parsegates(filename: &str) -> (GateStack, HashMap<u32,Wire>, Vec<u32>,Vec
                                                 net_in_a: in1,
                                                 net_in_b: in2,
                                                 net_out: out,
-                                                input_a: FiveLogic::ZERO,
-                                                input_b: FiveLogic::ZERO,
-                                                output: FiveLogic::ZERO,
+                                                input_a: FiveLogic::X,
+                                                input_b: FiveLogic::X,
+                                                output: FiveLogic::X,
                                             })
                                         )
                                     },
@@ -378,9 +378,9 @@ pub fn parsegates(filename: &str) -> (GateStack, HashMap<u32,Wire>, Vec<u32>,Vec
                                                 net_in_a: in1,
                                                 net_in_b: in2,
                                                 net_out: out,
-                                                input_a: FiveLogic::ZERO,
-                                                input_b: FiveLogic::ZERO,
-                                                output: FiveLogic::ZERO,
+                                                input_a: FiveLogic::X,
+                                                input_b: FiveLogic::X,
+                                                output: FiveLogic::X,
                                             })
                                         )
                                     },
@@ -390,9 +390,9 @@ pub fn parsegates(filename: &str) -> (GateStack, HashMap<u32,Wire>, Vec<u32>,Vec
                                                 net_in_a: in1,
                                                 net_in_b: in2,
                                                 net_out: out,
-                                                input_a: FiveLogic::ZERO,
-                                                input_b: FiveLogic::ZERO,
-                                                output: FiveLogic::ZERO,
+                                                input_a: FiveLogic::X,
+                                                input_b: FiveLogic::X,
+                                                output: FiveLogic::X,
                                             })
                                         )
                                     },
@@ -402,9 +402,9 @@ pub fn parsegates(filename: &str) -> (GateStack, HashMap<u32,Wire>, Vec<u32>,Vec
                                                 net_in_a: in1,
                                                 net_in_b: in2,
                                                 net_out: out,
-                                                input_a: FiveLogic::ZERO,
-                                                input_b: FiveLogic::ZERO,
-                                                output: FiveLogic::ZERO,
+                                                input_a: FiveLogic::X,
+                                                input_b: FiveLogic::X,
+                                                output: FiveLogic::X,
                                             })
                                         )
                                     },
@@ -435,7 +435,7 @@ pub fn parsegates(filename: &str) -> (GateStack, HashMap<u32,Wire>, Vec<u32>,Vec
                                     }
                                 }
                                 else {
-                                    let thiswire = Wire{net: out, fanout: vec![gatecount], wiretype: WireType::Net, level: FiveLogic::X};
+                                    let thiswire = Wire{net: out, fanout: vec![], wiretype: WireType::Net, level: FiveLogic::X};
 
                                     wires.insert(out, thiswire);
 
@@ -449,8 +449,8 @@ pub fn parsegates(filename: &str) -> (GateStack, HashMap<u32,Wire>, Vec<u32>,Vec
                                             Gates::INV(NOTGate {
                                                 net_in_a: in1,
                                                 net_out: out,
-                                                input_a: FiveLogic::ZERO,
-                                                output: FiveLogic::ZERO,
+                                                input_a: FiveLogic::X,
+                                                output: FiveLogic::X,
                                             })
                                         )
                                     },
@@ -459,8 +459,8 @@ pub fn parsegates(filename: &str) -> (GateStack, HashMap<u32,Wire>, Vec<u32>,Vec
                                             Gates::BUF(BUFGate {
                                                 net_in_a: in1,
                                                 net_out: out,
-                                                input_a: FiveLogic::ZERO,
-                                                output: FiveLogic::ZERO,
+                                                input_a: FiveLogic::X,
+                                                output: FiveLogic::X,
                                             })
                                         )
                                     },
@@ -532,16 +532,14 @@ fn evalline(currentwire: u32, gates: &mut GateStack, wires: &mut HashMap<u32,Wir
         match *gatetype {
             Gates::AND(mut gate) => {
                 let neta = gate.net_in_a;
-                let ina = gate.input_a;
                 let netb = gate.net_in_b;
-                let inb = gate.input_b;
                 let netout = gate.net_out;
                 let output = gate.output;
 
                 gate.input_a = wires.get(&neta).unwrap().level;
                 gate.input_b = wires.get(&netb).unwrap().level;
 
-                if ina != FiveLogic::X || inb != FiveLogic::X || output != FiveLogic::X {                   
+                if gate.input_a != FiveLogic::X && gate.input_b != FiveLogic::X && output == FiveLogic::X {                   
                     
                     gate.eval();
 
@@ -556,16 +554,14 @@ fn evalline(currentwire: u32, gates: &mut GateStack, wires: &mut HashMap<u32,Wir
             },
             Gates::NAND(mut gate) => {
                 let neta = gate.net_in_a;
-                let ina = gate.input_a;
                 let netb = gate.net_in_b;
-                let inb = gate.input_b;
                 let netout = gate.net_out;
                 let output = gate.output;
 
                 gate.input_a = wires.get(&neta).unwrap().level;
                 gate.input_b = wires.get(&netb).unwrap().level;
 
-                if ina != FiveLogic::X || inb != FiveLogic::X || output != FiveLogic::X {                   
+                if gate.input_a != FiveLogic::X && gate.input_b != FiveLogic::X && output == FiveLogic::X {                   
                     
                     gate.eval();
 
@@ -579,16 +575,14 @@ fn evalline(currentwire: u32, gates: &mut GateStack, wires: &mut HashMap<u32,Wir
             },
             Gates::OR(mut gate) => {
                 let neta = gate.net_in_a;
-                let ina = gate.input_a;
                 let netb = gate.net_in_b;
-                let inb = gate.input_b;
                 let netout = gate.net_out;
                 let output = gate.output;
 
                 gate.input_a = wires.get(&neta).unwrap().level;
                 gate.input_b = wires.get(&netb).unwrap().level;
 
-                if ina != FiveLogic::X || inb != FiveLogic::X || output != FiveLogic::X {                   
+                if gate.input_a != FiveLogic::X && gate.input_b != FiveLogic::X && output == FiveLogic::X {                   
                     
                     gate.eval();
 
@@ -602,16 +596,14 @@ fn evalline(currentwire: u32, gates: &mut GateStack, wires: &mut HashMap<u32,Wir
             },
             Gates::NOR(mut gate) => {
                 let neta = gate.net_in_a;
-                let ina = gate.input_a;
                 let netb = gate.net_in_b;
-                let inb = gate.input_b;
                 let netout = gate.net_out;
                 let output = gate.output;
 
                 gate.input_a = wires.get(&neta).unwrap().level;
                 gate.input_b = wires.get(&netb).unwrap().level;
 
-                if ina != FiveLogic::X || inb != FiveLogic::X || output != FiveLogic::X {                   
+                if gate.input_a != FiveLogic::X && gate.input_b != FiveLogic::X && output == FiveLogic::X {                   
                     
                     gate.eval();
 
@@ -625,13 +617,12 @@ fn evalline(currentwire: u32, gates: &mut GateStack, wires: &mut HashMap<u32,Wir
             },
             Gates::INV(mut gate) => {
                 let neta = gate.net_in_a;
-                let ina = gate.input_a;
                 let netout = gate.net_out;
                 let output = gate.output;
 
                 gate.input_a = wires.get(&neta).unwrap().level;
                 
-                if ina != FiveLogic::X || output != FiveLogic::X {                   
+                if gate.input_a != FiveLogic::X || output == FiveLogic::X {                   
                     
                     gate.eval();
 
@@ -645,13 +636,12 @@ fn evalline(currentwire: u32, gates: &mut GateStack, wires: &mut HashMap<u32,Wir
             },
             Gates::BUF(mut gate) => {
                 let neta = gate.net_in_a;
-                let ina = gate.input_a;
                 let netout = gate.net_out;
                 let output = gate.output;
 
                 gate.input_a = wires.get(&neta).unwrap().level;
                 
-                if ina != FiveLogic::X || output != FiveLogic::X {                   
+                if gate.input_a != FiveLogic::X || output == FiveLogic::X {                   
                     
                     gate.eval();
 

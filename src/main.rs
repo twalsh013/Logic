@@ -13,7 +13,7 @@ struct Args{
     filename: String,
 
     verbose: Option<bool>,
-
+    #[clap(short, long, value_parser, use_value_delimiter = true)]
     inputvec: Vec<u8>,
 }
 
@@ -76,6 +76,7 @@ fn main() {
         for o in &outputs[..] {
             print!("{} ",o);
         }
+        println!("");
     }
 
     gates::logic(&mut gates, &mut wires, inputs, outputs, cli.inputvec);
