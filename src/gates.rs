@@ -692,14 +692,31 @@ pub fn logic (gates: &mut GateStack, wires: &mut HashMap<u32, Wire>, inputs: Vec
 
     }
 
-    println!("Circuit output is as follows:");
+    println!("");
+    println!("Circuit outputs:");
+
+    for o in &outputs {
+        print!("{} ",o);
+    }
+
+    println!("");
+    println!("");
+    println!("Output vector:");
 
     for o in &outputs {
         let outnet = wires.get(o).unwrap();
 
-        println!("Net {:?} value is {:?}",*o,outnet.level);
+        match outnet.level {
+            FiveLogic::ONE => print!("1 "),
+            FiveLogic::ZERO => print!("0 "),
+            FiveLogic::X => print!("X "),
+            FiveLogic::D => print!("D "),
+            FiveLogic::Dnot => print!("d "),
+        }
 
+        //println!("Net {:?} value is {:?}",*o,outnet.level);
     }
+    println!("");
 
 }
 
