@@ -527,10 +527,10 @@ fn evalline(currentwire: u32, gates: &mut GateStack, wires: &mut HashMap<u32,Wir
     let fanout = line.fanout.clone();
 
     for i in fanout {
-        let gatetype = gates.gatestack.get(i as usize).unwrap();
+        let gatetype = gates.gatestack.get_mut(i as usize).unwrap();
 
-        match *gatetype {
-            Gates::AND(mut gate) => {
+        match gatetype {
+            Gates::AND(ref mut gate) => {
                 let neta = gate.net_in_a;
                 let netb = gate.net_in_b;
                 let netout = gate.net_out;
@@ -552,7 +552,7 @@ fn evalline(currentwire: u32, gates: &mut GateStack, wires: &mut HashMap<u32,Wir
 
                 }     
             },
-            Gates::NAND(mut gate) => {
+            Gates::NAND(ref mut gate) => {
                 let neta = gate.net_in_a;
                 let netb = gate.net_in_b;
                 let netout = gate.net_out;
@@ -573,7 +573,7 @@ fn evalline(currentwire: u32, gates: &mut GateStack, wires: &mut HashMap<u32,Wir
                     evalline(outnet.net, gates, wires);
                 }
             },
-            Gates::OR(mut gate) => {
+            Gates::OR(ref mut gate) => {
                 let neta = gate.net_in_a;
                 let netb = gate.net_in_b;
                 let netout = gate.net_out;
@@ -594,7 +594,7 @@ fn evalline(currentwire: u32, gates: &mut GateStack, wires: &mut HashMap<u32,Wir
                     evalline(outnet.net, gates, wires);
                 }
             },
-            Gates::NOR(mut gate) => {
+            Gates::NOR(ref mut gate) => {
                 let neta = gate.net_in_a;
                 let netb = gate.net_in_b;
                 let netout = gate.net_out;
@@ -615,7 +615,7 @@ fn evalline(currentwire: u32, gates: &mut GateStack, wires: &mut HashMap<u32,Wir
                     evalline(outnet.net, gates, wires);
                 }
             },
-            Gates::INV(mut gate) => {
+            Gates::INV(ref mut gate) => {
                 let neta = gate.net_in_a;
                 let netout = gate.net_out;
                 let output = gate.output;
@@ -634,7 +634,7 @@ fn evalline(currentwire: u32, gates: &mut GateStack, wires: &mut HashMap<u32,Wir
                     evalline(outnet.net, gates, wires);
                 }
             },
-            Gates::BUF(mut gate) => {
+            Gates::BUF(ref mut gate) => {
                 let neta = gate.net_in_a;
                 let netout = gate.net_out;
                 let output = gate.output;
@@ -660,18 +660,18 @@ fn evalline(currentwire: u32, gates: &mut GateStack, wires: &mut HashMap<u32,Wir
 }
 
 pub fn logic (gates: &mut GateStack, wires: &mut HashMap<u32, Wire>, inputs: Vec<u32>, outputs: Vec<u32>, inputvec: Vec<u8>) {
-    let mut i: u32 = 1;
+    let mut m: usize = 0;
 
-    for ins in inputvec {
-        let wire = wires.entry(i).or_insert(Wire{net: i, fanout: vec![], wiretype: WireType::Net, level: FiveLogic::X});
+    for ins in &inputs {
+        let wire = wires.entry(*ins).or_insert(Wire{net: *ins, fanout: vec![], wiretype: WireType::Net, level: FiveLogic::X});
 
-        match ins {
+        match inputvec[m] {
             0 => wire.level = FiveLogic::ZERO,
             1 => wire.level = FiveLogic::ONE,
             _ => wire.level = FiveLogic::X, 
         }
         
-        i += 1;
+        m += 1;
     }
 
     for i in &inputs {
