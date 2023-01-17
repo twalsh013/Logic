@@ -33,10 +33,7 @@ fn main() {
     let (mut gates, mut wires, inputs, outputs) = gates::parsegates(&filename);
 
     let mode = {
-        match cli.verbose {
-            Some(verb) => verb,
-            None => false,
-        }
+        cli.verbose.unwrap_or(false)
     };
 
 

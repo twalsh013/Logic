@@ -3,6 +3,7 @@ use std::io::{self,BufRead};
 use std::path::Path;
 use std::str::FromStr;
 use std::collections::HashMap;
+use ndarray::Array2;
 
 
 #[derive(Debug, PartialEq, Clone, Copy)]
@@ -37,8 +38,7 @@ pub struct Wire{
     pub level: FiveLogic,
 }
 
-type LineFault = Vec<u8>;
-type FaultMatrix = HashMap<u32,LineFault>;
+type FaultMatrix = Array2::<u8>;
 const SA0: u8 = 0x01;
 const SA1: u8 = 0x02;
 
@@ -54,7 +54,7 @@ fn invert(value: &FiveLogic) -> FiveLogic {
     } else if *value == FiveLogic::X {
         FiveLogic::X
     } else {
-        FiveLogic::X
+        FiveLogic::U
     }
 }
 
@@ -201,7 +201,10 @@ pub struct GateStack {
 
 impl Gate for ANDGate{
     fn eval(&mut self) {
-        if self.input_a == FiveLogic::ZERO || self.input_b == FiveLogic::ZERO {
+        if self.input_a == FiveLogic::ZERO || 
+           self.input_b == FiveLogic::ZERO || 
+           self.input_a == FiveLogic::D && self.input_b == FiveLogic::Dnot ||
+           self.input_a == FiveLogic::Dnot && self.input_b == FiveLogic::D {
             self.output = FiveLogic::ZERO;
         } else if self.input_a == FiveLogic::X || self.input_b == FiveLogic::X {
             self.output = FiveLogic::X;
@@ -211,10 +214,6 @@ impl Gate for ANDGate{
             self.output = self.input_a; 
         } else if self.input_a == FiveLogic::D && self.input_b == FiveLogic::D {
             self.output = FiveLogic::D;
-        } else if self.input_a == FiveLogic::D && self.input_b == FiveLogic::Dnot {
-            self.output = FiveLogic::ZERO;
-        } else if self.input_a == FiveLogic::Dnot && self.input_b == FiveLogic::D {
-            self.output = FiveLogic::ZERO;
         } else if self.input_a == FiveLogic::Dnot && self.input_b == FiveLogic::Dnot {
             self.output = FiveLogic::Dnot;
         }  
@@ -223,7 +222,9 @@ impl Gate for ANDGate{
 
 impl Gate for NANDGate{
     fn eval(&mut self) {
-        if self.input_a == FiveLogic::ZERO || self.input_b == FiveLogic::ZERO {
+        if self.input_a == FiveLogic::ZERO || self.input_b == FiveLogic::ZERO ||
+           self.input_a == FiveLogic::D && self.input_b == FiveLogic::Dnot ||
+           self.input_a == FiveLogic::Dnot && self.input_b == FiveLogic::D {
             self.output = invert(&FiveLogic::ZERO);
         } else if self.input_a == FiveLogic::X || self.input_b == FiveLogic::X {
             self.output = invert(&FiveLogic::X);
@@ -233,10 +234,6 @@ impl Gate for NANDGate{
             self.output = invert(&self.input_a); 
         } else if self.input_a == FiveLogic::D && self.input_b == FiveLogic::D {
             self.output = invert(&FiveLogic::D);
-        } else if self.input_a == FiveLogic::D && self.input_b == FiveLogic::Dnot {
-            self.output = invert(&FiveLogic::ZERO);
-        } else if self.input_a == FiveLogic::Dnot && self.input_b == FiveLogic::D {
-            self.output = invert(&FiveLogic::ZERO);
         } else if self.input_a == FiveLogic::Dnot && self.input_b == FiveLogic::Dnot {
             self.output = invert(&FiveLogic::Dnot);
         }  
@@ -245,7 +242,10 @@ impl Gate for NANDGate{
 
 impl Gate for ORGate{
     fn eval(&mut self) {
-        if self.input_a == FiveLogic::ONE || self.input_b == FiveLogic::ONE {
+        if self.input_a == FiveLogic::ONE || 
+           self.input_b == FiveLogic::ONE ||
+           self.input_a == FiveLogic::Dnot && self.input_b == FiveLogic::D ||
+           self.input_a == FiveLogic::D && self.input_b == FiveLogic::Dnot {
             self.output = FiveLogic::ONE;
         } else if self.input_a == FiveLogic::X || self.input_b == FiveLogic::X {
             self.output = FiveLogic::X;
@@ -255,10 +255,6 @@ impl Gate for ORGate{
             self.output = self.input_a; 
         } else if self.input_a == FiveLogic::D && self.input_b == FiveLogic::D {
             self.output = FiveLogic::D;
-        } else if self.input_a == FiveLogic::D && self.input_b == FiveLogic::Dnot {
-            self.output = FiveLogic::ONE;
-        } else if self.input_a == FiveLogic::Dnot && self.input_b == FiveLogic::D {
-            self.output = FiveLogic::ONE;
         } else if self.input_a == FiveLogic::Dnot && self.input_b == FiveLogic::Dnot {
             self.output = FiveLogic::Dnot;
         }  
@@ -267,7 +263,10 @@ impl Gate for ORGate{
 
 impl Gate for NORGate{
     fn eval(&mut self) {
-        if self.input_a == FiveLogic::ONE || self.input_b == FiveLogic::ONE {
+        if self.input_a == FiveLogic::ONE || 
+           self.input_b == FiveLogic::ONE || 
+           self.input_a == FiveLogic::D && self.input_b == FiveLogic::Dnot ||
+           self.input_a == FiveLogic::Dnot && self.input_b == FiveLogic::D {
             self.output = invert(&FiveLogic::ONE);
         } else if self.input_a == FiveLogic::X || self.input_b == FiveLogic::X {
             self.output = invert(&FiveLogic::X);
@@ -277,10 +276,6 @@ impl Gate for NORGate{
             self.output = invert(&self.input_a); 
         } else if self.input_a == FiveLogic::D && self.input_b == FiveLogic::D {
             self.output = invert(&FiveLogic::D);
-        } else if self.input_a == FiveLogic::D && self.input_b == FiveLogic::Dnot {
-            self.output = invert(&FiveLogic::ONE);
-        } else if self.input_a == FiveLogic::Dnot && self.input_b == FiveLogic::D {
-            self.output = invert(&FiveLogic::ONE);
         } else if self.input_a == FiveLogic::Dnot && self.input_b == FiveLogic::Dnot {
             self.output = invert(&FiveLogic::Dnot);
         }  
@@ -299,60 +294,37 @@ impl Gate for BUFGate{
     }
 }
 
-pub fn parsefaults(filename: &str) -> FaultMatrix {
-    let mut allfaults: FaultMatrix = HashMap::new();
+pub fn parsefaults(filename: &str, linecount: u32) -> FaultMatrix {
+    let mut faults = Array2::<u8>::zeros((linecount as usize,linecount as usize));
 
     if let Ok(lines) = read_lines(filename){
-        for info in lines {
-            if let Ok(faultdesc) = info {
-                let mut token = faultdesc.split_whitespace();
+        for info in lines.flatten() {
+            
+            let mut token = info.split_whitespace();
 
-                let line = token.next();
+            let line = token.next();
+ 
+            match line {
+                None => {
+                    println!("Bad line in faultlist");
+                    panic!();
+                }
+                Some(num) => {
+                    let linenum: u32 = FromStr::from_str(num).unwrap();
+                    let faulttype: u8 = FromStr::from_str(token.next().unwrap()).unwrap();
 
-                match line {
-                    None => {
-                        println!("Bad line in faultlist");
-                        panic!();
+                    if faulttype == 0 {
+                        faults[[linenum as usize,linenum as usize]] = SA0;
                     }
-                    Some(num) => {
-                        let linenum: u32 = FromStr::from_str(num).unwrap();
-                        let faulttype: u8 = FromStr::from_str(token.next().unwrap()).unwrap();
-
-                        if allfaults.contains_key(&linenum) {
-                            if let Some(thisline) = allfaults.get_mut(&linenum) {
-                                if faulttype == 0 {
-                                    thisline.push(SA0);
-                                }
-                                else if faulttype == 1 {
-                                    thisline.push(SA1);                                    
-                                }
-                                else {
-                                    panic!("Invalid fault type!");
-                                }
-                            }
-                        }
-                        else {
-                            let thisline: LineFault = {
-                                let mut tempvec = vec![];
-
-                                if faulttype == 0 {
-                                   tempvec.push(SA0);
-                                }
-                                else if faulttype == 1 {
-                                    tempvec.push(SA1);
-                                }
-                                tempvec
-                            };
-
-                            allfaults.insert(linenum, thisline);
-                        }
+                    else if faulttype == 1 {
+                        faults[[linenum as usize,linenum as usize]] = SA1;
                     }
                 }
             }
         }
     }
 
-    allfaults
+    faults
 }
 
 
@@ -364,210 +336,183 @@ pub fn parsegates(filename: &str) -> (GateStack, HashMap<u32,Wire>, Vec<u32>,Vec
     let mut wires: HashMap<u32,Wire> = HashMap::new();
 
     if let Ok(lines) = read_lines(filename){
-        for line in lines {
-            if let Ok(gate) = line {
-                let mut token = gate.split_whitespace();
+        for line in lines.flatten() {
+            let mut token = line.split_whitespace();
                 
-                let gatetype = token.next();
+            let gatetype = token.next();
 
-                match gatetype {
-                    None => {
-                        println!("Error, no gate type");
-                        return (gates, wires, instack, outstack)
-                    },
-                    Some(gateop) => {
-                        match gateop {
-                            "AND" | "OR" | "NAND" | "NOR" => {
-                                let in1 = FromStr::from_str(token.next().unwrap()).unwrap();
-                                let in2 = FromStr::from_str(token.next().unwrap()).unwrap();
-                                let out = FromStr::from_str(token.next().unwrap()).unwrap();
+            match gatetype {
+                None => {
+                    println!("Error, no gate type");
+                    return (gates, wires, instack, outstack)
+                },
+                Some(gateop) => {
+                    match gateop {
+                        "AND" | "OR" | "NAND" | "NOR" => {
+                            let in1 = FromStr::from_str(token.next().unwrap()).unwrap();
+                            let in2 = FromStr::from_str(token.next().unwrap()).unwrap();
+                            let out = FromStr::from_str(token.next().unwrap()).unwrap();
 
-                                if wires.contains_key(&in1) {
-                                    if let Some(thiswire) = wires.get_mut(&in1) {
-                                        thiswire.fanout.push(gatecount);
-                                    }
-                                }
-                                else {
-                                    let thiswire = Wire{net: in1, fanout: vec![gatecount], wiretype: WireType::Net, level: FiveLogic::U};
 
-                                    wires.insert(in1, thiswire);
-
-                                }
-
-                                if wires.contains_key(&in2) {
-                                    if let Some(thiswire) = wires.get_mut(&in2) {
-                                        thiswire.fanout.push(gatecount);
-                                    }
-                                }
-                                else {
-                                    let thiswire = Wire{net: in2, fanout: vec![gatecount], wiretype: WireType::Net, level: FiveLogic::U};
-
-                                    wires.insert(in2, thiswire);
-
-                                }
-
-                                if wires.contains_key(&out) {
-                                    if let Some(thiswire) = wires.get_mut(&out) {
-                                        thiswire.fanout.push(gatecount);
-                                    }
-                                }
-                                else {
-                                    let thiswire = Wire{net: out, fanout: vec![], wiretype: WireType::Net, level: FiveLogic::U};
-
-                                    wires.insert(out, thiswire);
-
-                                }
-
-                                gatecount += 1;
-
-                                match gateop {
-                                    "AND" => {
-                                        gates.gatestack.push(
-                                            Gates::AND(ANDGate {
-                                                net_in_a: in1,
-                                                net_in_b: in2,
-                                                net_out: out,
-                                                input_a: FiveLogic::U,
-                                                input_b: FiveLogic::U,
-                                                output: FiveLogic::U,
-                                            })
-                                        )
-                                    },
-                                    "OR" => {
-                                        gates.gatestack.push(
-                                            Gates::OR(ORGate {
-                                                net_in_a: in1,
-                                                net_in_b: in2,
-                                                net_out: out,
-                                                input_a: FiveLogic::U,
-                                                input_b: FiveLogic::U,
-                                                output: FiveLogic::U,
-                                            })
-                                        )
-                                    },
-                                    "NAND" => {
-                                        gates.gatestack.push(
-                                            Gates::NAND(NANDGate {
-                                                net_in_a: in1,
-                                                net_in_b: in2,
-                                                net_out: out,
-                                                input_a: FiveLogic::U,
-                                                input_b: FiveLogic::U,
-                                                output: FiveLogic::U,
-                                            })
-                                        )
-                                    },
-                                    "NOR" => {
-                                        gates.gatestack.push(
-                                            Gates::NOR(NORGate {
-                                                net_in_a: in1,
-                                                net_in_b: in2,
-                                                net_out: out,
-                                                input_a: FiveLogic::U,
-                                                input_b: FiveLogic::U,
-                                                output: FiveLogic::U,
-                                            })
-                                        )
-                                    },
-                                    _ => {},
-                                }
-                            
-                                //println!("{:?} with input nets {:?} and {:?}, output net {:?}",gateop,in1,in2,out);
-                            },
-                            "INV" | "BUF" => {
-                                let in1 = FromStr::from_str(token.next().unwrap()).unwrap();
-                                let out = FromStr::from_str(token.next().unwrap()).unwrap();
-                                
-                                if wires.contains_key(&in1) {
-                                    if let Some(thiswire) = wires.get_mut(&in1) {
-                                        thiswire.fanout.push(gatecount);
-                                    }
-                                }
-                                else {
-                                    let thiswire = Wire{net: in1, fanout: vec![gatecount], wiretype: WireType::Net, level: FiveLogic::U};
-
-                                    wires.insert(in1, thiswire);
-
-                                }
-
-                                if wires.contains_key(&out) {
-                                    if let Some(thiswire) = wires.get_mut(&out) {
-                                        thiswire.fanout.push(gatecount);
-                                    }
-                                }
-                                else {
-                                    let thiswire = Wire{net: out, fanout: vec![], wiretype: WireType::Net, level: FiveLogic::U};
-
-                                    wires.insert(out, thiswire);
-
-                                }
-
-                                gatecount += 1;
-
-                                match gateop {
-                                    "INV" => {
-                                        gates.gatestack.push(
-                                            Gates::INV(NOTGate {
-                                                net_in_a: in1,
-                                                net_out: out,
-                                                input_a: FiveLogic::U,
-                                                output: FiveLogic::U,
-                                            })
-                                        )
-                                    },
-                                    "BUF" => {
-                                        gates.gatestack.push(
-                                            Gates::BUF(BUFGate {
-                                                net_in_a: in1,
-                                                net_out: out,
-                                                input_a: FiveLogic::U,
-                                                output: FiveLogic::U,
-                                            })
-                                        )
-                                    },
-                                    _ => {},
-                                }
-
-                                //println!("{:?} with input net {:?}, output net {:?}",gateop,in1,out);
-                            },
-                            "INPUT" => {
-                                for i in token {
-                                    let input = i.parse::<i32>().unwrap();
-                                    
-                                    let wirenum = input as u32;
-
-                                    if let Some(thiswire) = wires.get_mut(&wirenum) {
-                                        thiswire.wiretype = WireType::PrimaryInput;
-                                    }
-                                    
-                                    if input != -1 {
-                                        instack.push(input as u32);
-                                    }
-                                }
-                            },
-                            "OUTPUT" => {
-                                for i in token {
-                                    let output = i.parse::<i32>().unwrap();
-
-                                    let wirenum = output as u32;
-
-                                    if let Some(thiswire) = wires.get_mut(&wirenum) {
-                                        thiswire.wiretype = WireType::PrimaryOutput;
-                                    }
-
-                                    if output != -1 {
-                                        outstack.push(output as u32);
-                                    }
-                                }
-                            },
-                            _ => {
-                                println!("Error, invalid gate entry");
-                                return (gates, wires, instack, outstack)
+                            if let std::collections::hash_map::Entry::Vacant(e) = wires.entry(in1) {
+                                let thiswire = Wire{net: in1, fanout: vec![gatecount], wiretype: WireType::Net, level: FiveLogic::U};
+                                e.insert(thiswire);
+                            } else if let Some(thiswire) = wires.get_mut(&in1) {
+                                thiswire.fanout.push(gatecount);
                             }
+
+                            if let std::collections::hash_map::Entry::Vacant(e) = wires.entry(in2) {
+                                 let thiswire = Wire{net: in2, fanout: vec![gatecount], wiretype: WireType::Net, level: FiveLogic::U};
+                                 e.insert(thiswire);
+                            } else if let Some(thiswire) = wires.get_mut(&in2) {
+                                thiswire.fanout.push(gatecount);
+                            }
+
+                            if let std::collections::hash_map::Entry::Vacant(e) = wires.entry(out) {
+                                let thiswire = Wire{net: out, fanout: vec![], wiretype: WireType::Net, level: FiveLogic::U};
+                                e.insert(thiswire);
+                            } else if let Some(thiswire) = wires.get_mut(&out) {
+                                thiswire.fanout.push(gatecount);
+                            }
+
+                            gatecount += 1;
+
+                            match gateop {
+                                "AND" => {
+                                    gates.gatestack.push(
+                                        Gates::AND(ANDGate {
+                                            net_in_a: in1,
+                                            net_in_b: in2,
+                                            net_out: out,
+                                            input_a: FiveLogic::U,
+                                            input_b: FiveLogic::U,
+                                            output: FiveLogic::U,
+                                        })
+                                    )
+                                },
+                                "OR" => {
+                                    gates.gatestack.push(
+                                        Gates::OR(ORGate {
+                                            net_in_a: in1,
+                                            net_in_b: in2,
+                                            net_out: out,
+                                            input_a: FiveLogic::U,
+                                            input_b: FiveLogic::U,
+                                            output: FiveLogic::U,
+                                        })
+                                    )
+                                },
+                                "NAND" => {
+                                    gates.gatestack.push(
+                                        Gates::NAND(NANDGate {
+                                            net_in_a: in1,
+                                            net_in_b: in2,
+                                            net_out: out,
+                                            input_a: FiveLogic::U,
+                                            input_b: FiveLogic::U,
+                                            output: FiveLogic::U,
+                                        })
+                                    )
+                                },
+                                "NOR" => {
+                                    gates.gatestack.push(
+                                        Gates::NOR(NORGate {
+                                            net_in_a: in1,
+                                            net_in_b: in2,
+                                            net_out: out,
+                                            input_a: FiveLogic::U,
+                                            input_b: FiveLogic::U,
+                                            output: FiveLogic::U,
+                                        })
+                                    )
+                                },
+                                _ => {},
+                            }
+                        
+                            //println!("{:?} with input nets {:?} and {:?}, output net {:?}",gateop,in1,in2,out);
+                        },
+                        "INV" | "BUF" => {
+                            let in1 = FromStr::from_str(token.next().unwrap()).unwrap();
+                            let out = FromStr::from_str(token.next().unwrap()).unwrap();
+                            
+                            if let std::collections::hash_map::Entry::Vacant(e) = wires.entry(in1) {
+                                let thiswire = Wire{net: in1, fanout: vec![gatecount], wiretype: WireType::Net, level: FiveLogic::U};
+                                e.insert(thiswire);
+                            } else if let Some(thiswire) = wires.get_mut(&in1) {
+                                thiswire.fanout.push(gatecount);
+                            }
+
+                            if let std::collections::hash_map::Entry::Vacant(e) = wires.entry(out) {
+                                let thiswire = Wire{net: out, fanout: vec![], wiretype: WireType::Net, level: FiveLogic::U};
+                                e.insert(thiswire);
+                            } else if let Some(thiswire) = wires.get_mut(&out) {
+                                thiswire.fanout.push(gatecount);
+                            }
+    
+                            gatecount += 1;
+
+                            match gateop {
+                                "INV" => {
+                                    gates.gatestack.push(
+                                        Gates::INV(NOTGate {
+                                            net_in_a: in1,
+                                            net_out: out,
+                                            input_a: FiveLogic::U,
+                                            output: FiveLogic::U,
+                                        })
+                                    )
+                                },
+                                "BUF" => {
+                                    gates.gatestack.push(
+                                        Gates::BUF(BUFGate {
+                                            net_in_a: in1,
+                                            net_out: out,
+                                            input_a: FiveLogic::U,
+                                            output: FiveLogic::U,
+                                        })
+                                    )
+                                },
+                                _ => {},
+                            }
+
+                            //println!("{:?} with input net {:?}, output net {:?}",gateop,in1,out);
+                        },
+                        "INPUT" => {
+                            for i in token {
+                                let input = i.parse::<i32>().unwrap();
+                                
+                                let wirenum = input as u32;
+
+                                if let Some(thiswire) = wires.get_mut(&wirenum) {
+                                    thiswire.wiretype = WireType::PrimaryInput;
+                                }
+                                    
+                                if input != -1 {
+                                    instack.push(input as u32);
+                                }
+                            }
+                        },
+                        "OUTPUT" => {
+                            for i in token {
+                                let output = i.parse::<i32>().unwrap();
+                                let wirenum = output as u32;
+
+                                if let Some(thiswire) = wires.get_mut(&wirenum) {
+                                    thiswire.wiretype = WireType::PrimaryOutput;
+                                }
+
+                                if output != -1 {
+                                    outstack.push(output as u32);
+                                }
+                            }
+                        },
+                        _ => {
+                            println!("Error, invalid gate entry");
+                            return (gates, wires, instack, outstack)
                         }
-                    },
-                }
-            }
+                    }
+                },
+            }        
         }
     }
 
@@ -721,9 +666,9 @@ fn evalline(currentwire: u32, gates: &mut GateStack, wires: &mut HashMap<u32,Wir
 }
 
 pub fn logic (gates: &mut GateStack, wires: &mut HashMap<u32, Wire>, inputs: Vec<u32>, outputs: Vec<u32>, inputvec: Vec<u8>) {
-    let mut m: usize = 0;
+    //let mut m: usize = 0;
 
-    for ins in &inputs {
+    for (m, ins) in inputs.iter().enumerate() {//ins in &inputs {
         let wire = wires.entry(*ins).or_insert(Wire{net: *ins, fanout: vec![], wiretype: WireType::Net, level: FiveLogic::X});
 
         match inputvec[m] {
@@ -732,7 +677,7 @@ pub fn logic (gates: &mut GateStack, wires: &mut HashMap<u32, Wire>, inputs: Vec
             _ => wire.level = FiveLogic::X, 
         }
         
-        m += 1;
+        //m += 1;
     }
 
     for i in &inputs {
