@@ -38,7 +38,7 @@ pub struct Wire{
     pub level: FiveLogic,
 }
 
-type FaultMatrix = Array2::<u8>;
+pub type FaultMatrix = Array2::<u8>;
 const SA0: u8 = 0x01;
 const SA1: u8 = 0x02;
 
@@ -294,8 +294,8 @@ impl Gate for BUFGate{
     }
 }
 
-pub fn parsefaults(filename: &str, linecount: u32) -> FaultMatrix {
-    let mut faults = Array2::<u8>::zeros((linecount as usize,linecount as usize));
+pub fn parsefaults(filename: &str, linecount: usize) -> FaultMatrix {
+    let mut faults = Array2::<u8>::zeros((linecount,linecount));
 
     if let Ok(lines) = read_lines(filename){
         for info in lines.flatten() {
@@ -525,7 +525,19 @@ where P: AsRef<Path>, {
     Ok(io::BufReader::new(file).lines())
 }
 
-fn evalline(currentwire: u32, gates: &mut GateStack, wires: &mut HashMap<u32,Wire>) {
+fn set_sub(list1: usize, list2: usize, outlist: usize, faults: &mut FaultMatrix) {
+    
+}
+
+fn set_union(list1: usize, list2: usize, outlist: usize, faults: &mut FaultMatrix) {
+
+}
+
+fn set_intersect(list1: usize, list2: usize, outlist: usize, faults: &mut FaultMatrix) {
+
+}
+
+fn evalline(currentwire: u32, gates: &mut GateStack, wires: &mut HashMap<u32,Wire>, faultsimmode: bool, faultlist: &mut FaultMatrix) {
     
     let line = wires.entry(currentwire)
                                 .or_insert(Wire{net: currentwire, fanout: vec![], wiretype: WireType::Net, level: FiveLogic::U});
@@ -554,7 +566,7 @@ fn evalline(currentwire: u32, gates: &mut GateStack, wires: &mut HashMap<u32,Wir
 
                     outnet.level = gate.output;
 
-                    evalline(outnet.net, gates, wires);
+                    evalline(outnet.net, gates, wires, faultsimmode, faultlist);
 
                 }     
             },
@@ -576,7 +588,7 @@ fn evalline(currentwire: u32, gates: &mut GateStack, wires: &mut HashMap<u32,Wir
 
                     outnet.level = gate.output;
 
-                    evalline(outnet.net, gates, wires);
+                    evalline(outnet.net, gates, wires, faultsimmode, faultlist);
                 }
             },
             Gates::OR(ref mut gate) => {
@@ -597,7 +609,7 @@ fn evalline(currentwire: u32, gates: &mut GateStack, wires: &mut HashMap<u32,Wir
 
                     outnet.level = gate.output;
 
-                    evalline(outnet.net, gates, wires);
+                    evalline(outnet.net, gates, wires, faultsimmode, faultlist);
                 }
             },
             Gates::NOR(ref mut gate) => {
@@ -618,7 +630,7 @@ fn evalline(currentwire: u32, gates: &mut GateStack, wires: &mut HashMap<u32,Wir
 
                     outnet.level = gate.output;
 
-                    evalline(outnet.net, gates, wires);
+                    evalline(outnet.net, gates, wires, faultsimmode, faultlist);
                 }
             },
             Gates::INV(ref mut gate) => {
@@ -637,7 +649,7 @@ fn evalline(currentwire: u32, gates: &mut GateStack, wires: &mut HashMap<u32,Wir
 
                     outnet.level = gate.output;
 
-                    evalline(outnet.net, gates, wires);
+                    evalline(outnet.net, gates, wires, faultsimmode, faultlist);
                 }
             },
             Gates::BUF(ref mut gate) => {
@@ -656,7 +668,7 @@ fn evalline(currentwire: u32, gates: &mut GateStack, wires: &mut HashMap<u32,Wir
 
                     outnet.level = gate.output;
 
-                    evalline(outnet.net, gates, wires);
+                    evalline(outnet.net, gates, wires, faultsimmode, faultlist);
                 }
             },
         }
@@ -665,23 +677,40 @@ fn evalline(currentwire: u32, gates: &mut GateStack, wires: &mut HashMap<u32,Wir
 
 }
 
-pub fn logic (gates: &mut GateStack, wires: &mut HashMap<u32, Wire>, inputs: Vec<u32>, outputs: Vec<u32>, inputvec: Vec<u8>) {
+pub fn logic (gates: &mut GateStack, wires: &mut HashMap<u32, Wire>, inputs: Vec<u32>, outputs: Vec<u32>, inputvec: Vec<u8>, faultsimmode: bool, faultlist: Option<FaultMatrix>) {
     //let mut m: usize = 0;
+
+    let mut allfaults = faultlist.unwrap();
 
     for (m, ins) in inputs.iter().enumerate() {//ins in &inputs {
         let wire = wires.entry(*ins).or_insert(Wire{net: *ins, fanout: vec![], wiretype: WireType::Net, level: FiveLogic::X});
 
+        
         match inputvec[m] {
-            0 => wire.level = FiveLogic::ZERO,
-            1 => wire.level = FiveLogic::ONE,
-            _ => wire.level = FiveLogic::X, 
+            0 => {
+                wire.level = FiveLogic::ZERO;
+
+                if faultsimmode {
+                    allfaults[[wire.net as usize,wire.net as usize]] = allfaults[[wire.net as usize,wire.net as usize]] & 0xFE;
+                }
+            },
+            1 => {
+                wire.level = FiveLogic::ONE;
+
+                if faultsimmode {
+                    allfaults[[wire.net as usize,wire.net as usize]] = allfaults[[wire.net as usize,wire.net as usize]] & 0xFD;
+                }
+            },
+            _ => {
+                wire.level = FiveLogic::X;
+            }, 
         }
         
         //m += 1;
     }
 
     for i in &inputs {
-        evalline(*i, gates, wires);
+        evalline(*i, gates, wires, faultsimmode, &mut allfaults);
 
         let mut terminate = true;
 

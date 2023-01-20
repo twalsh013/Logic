@@ -15,12 +15,16 @@ struct Args{
     verbose: Option<bool>,
     #[clap(short, long, value_parser, use_value_delimiter = true)]
     inputvec: Vec<u8>,
+
+    faultlist: Option<String>,
 }
 
 fn main() {
 
     let cli = Args::parse();
     
+    
+
     //let mut and1 = ANDGate::new();
 
     //and1.input_a = FiveLogic::X;
@@ -76,7 +80,16 @@ fn main() {
         println!("");
     }
 
-    gates::logic(&mut gates, &mut wires, inputs, outputs, cli.inputvec);
-    
+    let faultmatrix: gates::FaultMatrix;
+
+    match cli.faultlist {
+        Some(flist) => {
+            faultmatrix = gates::parsefaults(&flist,wires.len());
+            gates::logic(&mut gates, &mut wires, inputs, outputs, cli.inputvec, true, Some(faultmatrix));
+        },
+        None => {
+            gates::logic(&mut gates, &mut wires, inputs, outputs, cli.inputvec, false, None);                 
+        }
+    }    
 }
 
