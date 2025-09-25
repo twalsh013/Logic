@@ -680,7 +680,10 @@ fn evalline(currentwire: u32, gates: &mut GateStack, wires: &mut HashMap<u32,Wir
 pub fn logic (gates: &mut GateStack, wires: &mut HashMap<u32, Wire>, inputs: Vec<u32>, outputs: Vec<u32>, inputvec: Vec<u8>, faultsimmode: bool, faultlist: Option<FaultMatrix>) {
     //let mut m: usize = 0;
 
-    let mut allfaults = faultlist.unwrap();
+    let mut allfaults = match faultlist {
+        Some(matrix) => matrix,
+        None => Array2::<u8>::zeros((wires.len(), wires.len())),
+    };
 
     for (m, ins) in inputs.iter().enumerate() {//ins in &inputs {
         let wire = wires.entry(*ins).or_insert(Wire{net: *ins, fanout: vec![], wiretype: WireType::Net, level: FiveLogic::X});
@@ -1636,4 +1639,22 @@ mod tests {
         assert_ne!(gate.output,FiveLogic::X);
     }
 
+    #[test]
+    fn logic_without_faultlist_does_not_panic() {
+        let mut gates = GateStack { gatestack: vec![] };
+        let mut wires: HashMap<u32, Wire> = HashMap::new();
+        let inputs = vec![];
+        let outputs = vec![];
+        let inputvec = vec![];
+
+        logic(
+            &mut gates,
+            &mut wires,
+            inputs,
+            outputs,
+            inputvec,
+            false,
+            None,
+        );
+    }
 }
