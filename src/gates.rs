@@ -554,12 +554,38 @@ where
     result
 }
 
-fn set_union(list1: usize, list2: usize, outlist: usize, faults: &mut FaultMatrix) {
+fn set_union<S1, S2>(list1: &ArrayBase<S1, Ix1>, list2: &ArrayBase<S2, Ix1>) -> Array1<u8>
+where
+    S1: Data<Elem = u8>,
+    S2: Data<Elem = u8>,
+{
+    if list1.len() != list2.len() {
+        eprintln!(
+            "set_union error: input lists must have the same length ({} != {}).",
+            list1.len(),
+            list2.len()
+        );
+        panic!("set_union received lists of mismatched lengths");
+    }
 
+    Array1::from_iter(list1.iter().zip(list2.iter()).map(|(a, b)| *a | *b))
 }
 
-fn set_intersect(list1: usize, list2: usize, outlist: usize, faults: &mut FaultMatrix) {
+fn set_intersect<S1, S2>(list1: &ArrayBase<S1, Ix1>, list2: &ArrayBase<S2, Ix1>) -> Array1<u8>
+where
+    S1: Data<Elem = u8>,
+    S2: Data<Elem = u8>,
+{
+    if list1.len() != list2.len() {
+        eprintln!(
+            "set_intersect error: input lists must have the same length ({} != {}).",
+            list1.len(),
+            list2.len()
+        );
+        panic!("set_intersect received lists of mismatched lengths");
+    }
 
+    Array1::from_iter(list1.iter().zip(list2.iter()).map(|(a, b)| *a & *b))
 }
 
 fn evalline(currentwire: u32, gates: &mut GateStack, wires: &mut HashMap<u32,Wire>, faultsimmode: bool, faultlist: &mut FaultMatrix) {
