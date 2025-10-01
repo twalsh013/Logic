@@ -3,7 +3,7 @@ use std::io::{self,BufRead};
 use std::path::Path;
 use std::str::FromStr;
 use std::collections::HashMap;
-use ndarray::Array2;
+use ndarray::{Array1, Array2, ArrayBase, Data, Ix1};
 
 
 #[derive(Debug, PartialEq, Clone, Copy)]
@@ -525,8 +525,33 @@ where P: AsRef<Path>, {
     Ok(io::BufReader::new(file).lines())
 }
 
-fn set_sub(list1: usize, list2: usize, outlist: usize, faults: &mut FaultMatrix) {
-    
+fn set_sub<S1, S2>(list1: &ArrayBase<S1, Ix1>, list2: &ArrayBase<S2, Ix1>) -> Array1<u8>
+where
+    S1: Data<Elem = u8>,
+    S2: Data<Elem = u8>,
+{
+    if list1.len() != list2.len() {
+        eprintln!(
+            "set_sub error: input lists must have the same length ({} != {}).",
+            list1.len(),
+            list2.len()
+        );
+        panic!("set_sub received lists of mismatched lengths");
+    }
+
+    let mut result = list1.to_owned();
+
+    for (res_value, list2_value) in result.iter_mut().zip(list2.iter()) {
+        if (list2_value & SA0) == SA0 {
+            *res_value &= 0xE;
+        }
+
+        if (list2_value & SA1) == SA1 {
+            *res_value &= 0xD;
+        }
+    }
+
+    result
 }
 
 fn set_union(list1: usize, list2: usize, outlist: usize, faults: &mut FaultMatrix) {
