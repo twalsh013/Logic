@@ -588,6 +588,7 @@ where
     Array1::from_iter(list1.iter().zip(list2.iter()).map(|(a, b)| *a & *b))
 }
 
+
 fn evalline(currentwire: u32, gates: &mut GateStack, wires: &mut HashMap<u32,Wire>, faultsimmode: bool, faultlist: &mut FaultMatrix) {
     
     let line = wires.entry(currentwire)
@@ -813,7 +814,66 @@ pub fn logic (gates: &mut GateStack, wires: &mut HashMap<u32, Wire>, inputs: Vec
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+    use ndarray::Array1;
+
+    #[test]
+    fn set_sub_filters_stuck_at_faults() {
+        let list1 = Array1::from(vec![0x0F, 0x03, 0x0C]);
+        let list2 = Array1::from(vec![SA0, SA1, SA0 | SA1]);
+
+        let result = set_sub(&list1, &list2);
+
+        assert_eq!(result, Array1::from(vec![0x0E, 0x01, 0x0C]));
+        assert_eq!(list1, Array1::from(vec![0x0F, 0x03, 0x0C]));
+    }
+
+    #[test]
+    #[should_panic(expected = "set_sub received lists of mismatched lengths")]
+    fn set_sub_panics_on_mismatched_lengths() {
+        let list1 = Array1::from(vec![0x00]);
+        let list2 = Array1::from(vec![0x00, 0x01]);
+
+        let _ = set_sub(&list1, &list2);
+    }
+
+    #[test]
+    fn set_union_combines_faults() {
+        let list1 = Array1::from(vec![0x01, 0x04, 0x08]);
+        let list2 = Array1::from(vec![0x02, 0x01, 0x08]);
+
+        let result = set_union(&list1, &list2);
+
+        assert_eq!(result, Array1::from(vec![0x03, 0x05, 0x08]));
+    }
+
+    #[test]
+    #[should_panic(expected = "set_union received lists of mismatched lengths")]
+    fn set_union_panics_on_mismatched_lengths() {
+        let list1 = Array1::from(vec![0x00]);
+        let list2 = Array1::from(vec![0x00, 0x01]);
+
+        let _ = set_union(&list1, &list2);
+    }
+
+    #[test]
+    fn set_intersect_preserves_common_faults() {
+        let list1 = Array1::from(vec![0x03, 0x05, 0x0F]);
+        let list2 = Array1::from(vec![0x02, 0x01, 0x08]);
+
+        let result = set_intersect(&list1, &list2);
+
+        assert_eq!(result, Array1::from(vec![0x02, 0x01, 0x08]));
+    }
+
+    #[test]
+    #[should_panic(expected = "set_intersect received lists of mismatched lengths")]
+    fn set_intersect_panics_on_mismatched_lengths() {
+        let list1 = Array1::from(vec![0x00]);
+        let list2 = Array1::from(vec![0x00, 0x01]);
+
+        let _ = set_intersect(&list1, &list2);
+    }
+
     #[test]
     fn and_0_b() {
         let mut gate = ANDGate {
