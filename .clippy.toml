@@ -1,0 +1,7 @@
+# Clippy configuration for Logic simulator
+#
+# This project uses uppercase enum variants for logic gates and values
+# which is intentional for clarity (AND, OR, NAND, NOR, etc.)
+
+# Allow uppercase acronyms for enum variants
+# This is a style choice for this project to match digital logic conventions

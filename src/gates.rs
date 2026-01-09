@@ -1,9 +1,8 @@
+use std::collections::HashMap;
 use std::fs::File;
-use std::io::{self,BufRead};
+use std::io::{self, BufRead};
 use std::path::Path;
 use std::str::FromStr;
-use std::collections::HashMap;
-
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum FiveLogic {
@@ -23,13 +22,13 @@ pub enum Gates {
     BUF(BUFGate),
 }
 
-pub enum WireType{
+pub enum WireType {
     PrimaryInput,
     PrimaryOutput,
     Net,
 }
 
-pub struct Wire{
+pub struct Wire {
     pub net: u32,
     pub fanout: Vec<u32>,
     pub wiretype: WireType,
@@ -52,7 +51,6 @@ fn invert(value: &FiveLogic) -> FiveLogic {
         FiveLogic::X
     }
 }
-
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub struct ANDGate {
@@ -184,7 +182,6 @@ pub struct BUFGate {
     }
 }*/
 
-
 pub trait Gate {
     fn eval(&mut self);
     //fn new(&self) -> Self;
@@ -194,7 +191,7 @@ pub struct GateStack {
     pub gatestack: Vec<Gates>,
 }
 
-impl Gate for ANDGate{
+impl Gate for ANDGate {
     fn eval(&mut self) {
         if self.input_a == FiveLogic::ZERO || self.input_b == FiveLogic::ZERO {
             self.output = FiveLogic::ZERO;
@@ -203,7 +200,7 @@ impl Gate for ANDGate{
         } else if self.input_a == FiveLogic::ONE {
             self.output = self.input_b;
         } else if self.input_b == FiveLogic::ONE {
-            self.output = self.input_a; 
+            self.output = self.input_a;
         } else if self.input_a == FiveLogic::D && self.input_b == FiveLogic::D {
             self.output = FiveLogic::D;
         } else if self.input_a == FiveLogic::D && self.input_b == FiveLogic::Dnot {
@@ -212,11 +209,11 @@ impl Gate for ANDGate{
             self.output = FiveLogic::ZERO;
         } else if self.input_a == FiveLogic::Dnot && self.input_b == FiveLogic::Dnot {
             self.output = FiveLogic::Dnot;
-        }  
+        }
     }
 }
 
-impl Gate for NANDGate{
+impl Gate for NANDGate {
     fn eval(&mut self) {
         if self.input_a == FiveLogic::ZERO || self.input_b == FiveLogic::ZERO {
             self.output = invert(&FiveLogic::ZERO);
@@ -225,7 +222,7 @@ impl Gate for NANDGate{
         } else if self.input_a == FiveLogic::ONE {
             self.output = invert(&self.input_b);
         } else if self.input_b == FiveLogic::ONE {
-            self.output = invert(&self.input_a); 
+            self.output = invert(&self.input_a);
         } else if self.input_a == FiveLogic::D && self.input_b == FiveLogic::D {
             self.output = invert(&FiveLogic::D);
         } else if self.input_a == FiveLogic::D && self.input_b == FiveLogic::Dnot {
@@ -234,11 +231,11 @@ impl Gate for NANDGate{
             self.output = invert(&FiveLogic::ZERO);
         } else if self.input_a == FiveLogic::Dnot && self.input_b == FiveLogic::Dnot {
             self.output = invert(&FiveLogic::Dnot);
-        }  
+        }
     }
 }
 
-impl Gate for ORGate{
+impl Gate for ORGate {
     fn eval(&mut self) {
         if self.input_a == FiveLogic::ONE || self.input_b == FiveLogic::ONE {
             self.output = FiveLogic::ONE;
@@ -247,7 +244,7 @@ impl Gate for ORGate{
         } else if self.input_a == FiveLogic::ZERO {
             self.output = self.input_b;
         } else if self.input_b == FiveLogic::ZERO {
-            self.output = self.input_a; 
+            self.output = self.input_a;
         } else if self.input_a == FiveLogic::D && self.input_b == FiveLogic::D {
             self.output = FiveLogic::D;
         } else if self.input_a == FiveLogic::D && self.input_b == FiveLogic::Dnot {
@@ -256,11 +253,11 @@ impl Gate for ORGate{
             self.output = FiveLogic::ONE;
         } else if self.input_a == FiveLogic::Dnot && self.input_b == FiveLogic::Dnot {
             self.output = FiveLogic::Dnot;
-        }  
+        }
     }
 }
 
-impl Gate for NORGate{
+impl Gate for NORGate {
     fn eval(&mut self) {
         if self.input_a == FiveLogic::ONE || self.input_b == FiveLogic::ONE {
             self.output = invert(&FiveLogic::ONE);
@@ -269,7 +266,7 @@ impl Gate for NORGate{
         } else if self.input_a == FiveLogic::ZERO {
             self.output = invert(&self.input_b);
         } else if self.input_b == FiveLogic::ZERO {
-            self.output = invert(&self.input_a); 
+            self.output = invert(&self.input_a);
         } else if self.input_a == FiveLogic::D && self.input_b == FiveLogic::D {
             self.output = invert(&FiveLogic::D);
         } else if self.input_a == FiveLogic::D && self.input_b == FiveLogic::Dnot {
@@ -278,42 +275,41 @@ impl Gate for NORGate{
             self.output = invert(&FiveLogic::ONE);
         } else if self.input_a == FiveLogic::Dnot && self.input_b == FiveLogic::Dnot {
             self.output = invert(&FiveLogic::Dnot);
-        }  
+        }
     }
 }
 
-impl Gate for NOTGate{
+impl Gate for NOTGate {
     fn eval(&mut self) {
         self.output = invert(&self.input_a);
     }
 }
 
-impl Gate for BUFGate{
+impl Gate for BUFGate {
     fn eval(&mut self) {
         self.output = self.input_a;
     }
 }
 
-
-pub fn parsegates(filename: &str) -> (GateStack, HashMap<u32,Wire>, Vec<u32>,Vec<u32>) {
-    let mut gates = GateStack {gatestack: vec![]};
+pub fn parsegates(filename: &str) -> (GateStack, HashMap<u32, Wire>, Vec<u32>, Vec<u32>) {
+    let mut gates = GateStack { gatestack: vec![] };
     let mut instack: Vec<u32> = vec![];
     let mut outstack: Vec<u32> = vec![];
     let mut gatecount: u32 = 0;
-    let mut wires: HashMap<u32,Wire> = HashMap::new();
+    let mut wires: HashMap<u32, Wire> = HashMap::new();
 
-    if let Ok(lines) = read_lines(filename){
+    if let Ok(lines) = read_lines(filename) {
         for line in lines {
             if let Ok(gate) = line {
                 let mut token = gate.split_whitespace();
-                
+
                 let gatetype = token.next();
 
                 match gatetype {
                     None => {
                         println!("Error, no gate type");
-                        return (gates, wires, instack, outstack)
-                    },
+                        return (gates, wires, instack, outstack);
+                    }
                     Some(gateop) => {
                         match gateop {
                             "AND" | "OR" | "NAND" | "NOR" => {
@@ -325,165 +321,156 @@ pub fn parsegates(filename: &str) -> (GateStack, HashMap<u32,Wire>, Vec<u32>,Vec
                                     if let Some(thiswire) = wires.get_mut(&in1) {
                                         thiswire.fanout.push(gatecount);
                                     }
-                                }
-                                else {
-                                    let thiswire = Wire{net: in1, fanout: vec![gatecount], wiretype: WireType::Net, level: FiveLogic::X};
+                                } else {
+                                    let thiswire = Wire {
+                                        net: in1,
+                                        fanout: vec![gatecount],
+                                        wiretype: WireType::Net,
+                                        level: FiveLogic::X,
+                                    };
 
                                     wires.insert(in1, thiswire);
-
                                 }
 
                                 if wires.contains_key(&in2) {
                                     if let Some(thiswire) = wires.get_mut(&in2) {
                                         thiswire.fanout.push(gatecount);
                                     }
-                                }
-                                else {
-                                    let thiswire = Wire{net: in2, fanout: vec![gatecount], wiretype: WireType::Net, level: FiveLogic::X};
+                                } else {
+                                    let thiswire = Wire {
+                                        net: in2,
+                                        fanout: vec![gatecount],
+                                        wiretype: WireType::Net,
+                                        level: FiveLogic::X,
+                                    };
 
                                     wires.insert(in2, thiswire);
-
                                 }
 
                                 if wires.contains_key(&out) {
                                     if let Some(thiswire) = wires.get_mut(&out) {
                                         thiswire.fanout.push(gatecount);
                                     }
-                                }
-                                else {
-                                    let thiswire = Wire{net: out, fanout: vec![], wiretype: WireType::Net, level: FiveLogic::X};
+                                } else {
+                                    let thiswire = Wire {
+                                        net: out,
+                                        fanout: vec![],
+                                        wiretype: WireType::Net,
+                                        level: FiveLogic::X,
+                                    };
 
                                     wires.insert(out, thiswire);
-
                                 }
 
                                 gatecount += 1;
 
                                 match gateop {
-                                    "AND" => {
-                                        gates.gatestack.push(
-                                            Gates::AND(ANDGate {
-                                                net_in_a: in1,
-                                                net_in_b: in2,
-                                                net_out: out,
-                                                input_a: FiveLogic::X,
-                                                input_b: FiveLogic::X,
-                                                output: FiveLogic::X,
-                                            })
-                                        )
-                                    },
-                                    "OR" => {
-                                        gates.gatestack.push(
-                                            Gates::OR(ORGate {
-                                                net_in_a: in1,
-                                                net_in_b: in2,
-                                                net_out: out,
-                                                input_a: FiveLogic::X,
-                                                input_b: FiveLogic::X,
-                                                output: FiveLogic::X,
-                                            })
-                                        )
-                                    },
-                                    "NAND" => {
-                                        gates.gatestack.push(
-                                            Gates::NAND(NANDGate {
-                                                net_in_a: in1,
-                                                net_in_b: in2,
-                                                net_out: out,
-                                                input_a: FiveLogic::X,
-                                                input_b: FiveLogic::X,
-                                                output: FiveLogic::X,
-                                            })
-                                        )
-                                    },
-                                    "NOR" => {
-                                        gates.gatestack.push(
-                                            Gates::NOR(NORGate {
-                                                net_in_a: in1,
-                                                net_in_b: in2,
-                                                net_out: out,
-                                                input_a: FiveLogic::X,
-                                                input_b: FiveLogic::X,
-                                                output: FiveLogic::X,
-                                            })
-                                        )
-                                    },
-                                    _ => {},
+                                    "AND" => gates.gatestack.push(Gates::AND(ANDGate {
+                                        net_in_a: in1,
+                                        net_in_b: in2,
+                                        net_out: out,
+                                        input_a: FiveLogic::X,
+                                        input_b: FiveLogic::X,
+                                        output: FiveLogic::X,
+                                    })),
+                                    "OR" => gates.gatestack.push(Gates::OR(ORGate {
+                                        net_in_a: in1,
+                                        net_in_b: in2,
+                                        net_out: out,
+                                        input_a: FiveLogic::X,
+                                        input_b: FiveLogic::X,
+                                        output: FiveLogic::X,
+                                    })),
+                                    "NAND" => gates.gatestack.push(Gates::NAND(NANDGate {
+                                        net_in_a: in1,
+                                        net_in_b: in2,
+                                        net_out: out,
+                                        input_a: FiveLogic::X,
+                                        input_b: FiveLogic::X,
+                                        output: FiveLogic::X,
+                                    })),
+                                    "NOR" => gates.gatestack.push(Gates::NOR(NORGate {
+                                        net_in_a: in1,
+                                        net_in_b: in2,
+                                        net_out: out,
+                                        input_a: FiveLogic::X,
+                                        input_b: FiveLogic::X,
+                                        output: FiveLogic::X,
+                                    })),
+                                    _ => {}
                                 }
-                            
+
                                 //println!("{:?} with input nets {:?} and {:?}, output net {:?}",gateop,in1,in2,out);
-                            },
+                            }
                             "INV" | "BUF" => {
                                 let in1 = FromStr::from_str(token.next().unwrap()).unwrap();
                                 let out = FromStr::from_str(token.next().unwrap()).unwrap();
-                                
+
                                 if wires.contains_key(&in1) {
                                     if let Some(thiswire) = wires.get_mut(&in1) {
                                         thiswire.fanout.push(gatecount);
                                     }
-                                }
-                                else {
-                                    let thiswire = Wire{net: in1, fanout: vec![gatecount], wiretype: WireType::Net, level: FiveLogic::X};
+                                } else {
+                                    let thiswire = Wire {
+                                        net: in1,
+                                        fanout: vec![gatecount],
+                                        wiretype: WireType::Net,
+                                        level: FiveLogic::X,
+                                    };
 
                                     wires.insert(in1, thiswire);
-
                                 }
 
                                 if wires.contains_key(&out) {
                                     if let Some(thiswire) = wires.get_mut(&out) {
                                         thiswire.fanout.push(gatecount);
                                     }
-                                }
-                                else {
-                                    let thiswire = Wire{net: out, fanout: vec![], wiretype: WireType::Net, level: FiveLogic::X};
+                                } else {
+                                    let thiswire = Wire {
+                                        net: out,
+                                        fanout: vec![],
+                                        wiretype: WireType::Net,
+                                        level: FiveLogic::X,
+                                    };
 
                                     wires.insert(out, thiswire);
-
                                 }
 
                                 gatecount += 1;
 
                                 match gateop {
-                                    "INV" => {
-                                        gates.gatestack.push(
-                                            Gates::INV(NOTGate {
-                                                net_in_a: in1,
-                                                net_out: out,
-                                                input_a: FiveLogic::X,
-                                                output: FiveLogic::X,
-                                            })
-                                        )
-                                    },
-                                    "BUF" => {
-                                        gates.gatestack.push(
-                                            Gates::BUF(BUFGate {
-                                                net_in_a: in1,
-                                                net_out: out,
-                                                input_a: FiveLogic::X,
-                                                output: FiveLogic::X,
-                                            })
-                                        )
-                                    },
-                                    _ => {},
+                                    "INV" => gates.gatestack.push(Gates::INV(NOTGate {
+                                        net_in_a: in1,
+                                        net_out: out,
+                                        input_a: FiveLogic::X,
+                                        output: FiveLogic::X,
+                                    })),
+                                    "BUF" => gates.gatestack.push(Gates::BUF(BUFGate {
+                                        net_in_a: in1,
+                                        net_out: out,
+                                        input_a: FiveLogic::X,
+                                        output: FiveLogic::X,
+                                    })),
+                                    _ => {}
                                 }
 
                                 //println!("{:?} with input net {:?}, output net {:?}",gateop,in1,out);
-                            },
+                            }
                             "INPUT" => {
                                 for i in token {
                                     let input = i.parse::<i32>().unwrap();
-                                    
+
                                     let wirenum = input as u32;
 
                                     if let Some(thiswire) = wires.get_mut(&wirenum) {
                                         thiswire.wiretype = WireType::PrimaryInput;
                                     }
-                                    
+
                                     if input != -1 {
                                         instack.push(input as u32);
                                     }
                                 }
-                            },
+                            }
                             "OUTPUT" => {
                                 for i in token {
                                     let output = i.parse::<i32>().unwrap();
@@ -498,13 +485,13 @@ pub fn parsegates(filename: &str) -> (GateStack, HashMap<u32,Wire>, Vec<u32>,Vec
                                         outstack.push(output as u32);
                                     }
                                 }
-                            },
+                            }
                             _ => {
                                 println!("Error, invalid gate entry");
-                                return (gates, wires, instack, outstack)
+                                return (gates, wires, instack, outstack);
                             }
                         }
-                    },
+                    }
                 }
             }
         }
@@ -514,15 +501,20 @@ pub fn parsegates(filename: &str) -> (GateStack, HashMap<u32,Wire>, Vec<u32>,Vec
 }
 
 fn read_lines<P>(filename: P) -> io::Result<io::Lines<io::BufReader<File>>>
-where P: AsRef<Path>, {
+where
+    P: AsRef<Path>,
+{
     let file: File = File::open(filename)?;
     Ok(io::BufReader::new(file).lines())
 }
 
-fn evalline(currentwire: u32, gates: &mut GateStack, wires: &mut HashMap<u32,Wire>) {
-    
-    let line = wires.entry(currentwire)
-                                .or_insert(Wire{net: currentwire, fanout: vec![], wiretype: WireType::Net, level: FiveLogic::X});
+fn evalline(currentwire: u32, gates: &mut GateStack, wires: &mut HashMap<u32, Wire>) {
+    let line = wires.entry(currentwire).or_insert(Wire {
+        net: currentwire,
+        fanout: vec![],
+        wiretype: WireType::Net,
+        level: FiveLogic::X,
+    });
 
     let fanout = line.fanout.clone();
 
@@ -539,19 +531,24 @@ fn evalline(currentwire: u32, gates: &mut GateStack, wires: &mut HashMap<u32,Wir
                 gate.input_a = wires.get(&neta).unwrap().level;
                 gate.input_b = wires.get(&netb).unwrap().level;
 
-                if gate.input_a != FiveLogic::X && gate.input_b != FiveLogic::X && output == FiveLogic::X {                   
-                    
+                if gate.input_a != FiveLogic::X
+                    && gate.input_b != FiveLogic::X
+                    && output == FiveLogic::X
+                {
                     gate.eval();
 
-                    let outnet = wires.entry(netout)
-                                        .or_insert(Wire{net: gate.net_in_a, fanout: vec![], wiretype: WireType::Net, level: gate.output});
+                    let outnet = wires.entry(netout).or_insert(Wire {
+                        net: gate.net_in_a,
+                        fanout: vec![],
+                        wiretype: WireType::Net,
+                        level: gate.output,
+                    });
 
                     outnet.level = gate.output;
 
                     evalline(outnet.net, gates, wires);
-
-                }     
-            },
+                }
+            }
             Gates::NAND(ref mut gate) => {
                 let neta = gate.net_in_a;
                 let netb = gate.net_in_b;
@@ -561,18 +558,24 @@ fn evalline(currentwire: u32, gates: &mut GateStack, wires: &mut HashMap<u32,Wir
                 gate.input_a = wires.get(&neta).unwrap().level;
                 gate.input_b = wires.get(&netb).unwrap().level;
 
-                if gate.input_a != FiveLogic::X && gate.input_b != FiveLogic::X && output == FiveLogic::X {                   
-                    
+                if gate.input_a != FiveLogic::X
+                    && gate.input_b != FiveLogic::X
+                    && output == FiveLogic::X
+                {
                     gate.eval();
 
-                    let outnet = wires.entry(netout)
-                                        .or_insert(Wire{net: gate.net_in_a, fanout: vec![], wiretype: WireType::Net, level: gate.output});
+                    let outnet = wires.entry(netout).or_insert(Wire {
+                        net: gate.net_in_a,
+                        fanout: vec![],
+                        wiretype: WireType::Net,
+                        level: gate.output,
+                    });
 
                     outnet.level = gate.output;
 
                     evalline(outnet.net, gates, wires);
                 }
-            },
+            }
             Gates::OR(ref mut gate) => {
                 let neta = gate.net_in_a;
                 let netb = gate.net_in_b;
@@ -582,18 +585,24 @@ fn evalline(currentwire: u32, gates: &mut GateStack, wires: &mut HashMap<u32,Wir
                 gate.input_a = wires.get(&neta).unwrap().level;
                 gate.input_b = wires.get(&netb).unwrap().level;
 
-                if gate.input_a != FiveLogic::X && gate.input_b != FiveLogic::X && output == FiveLogic::X {                   
-                    
+                if gate.input_a != FiveLogic::X
+                    && gate.input_b != FiveLogic::X
+                    && output == FiveLogic::X
+                {
                     gate.eval();
 
-                    let outnet = wires.entry(netout)
-                                        .or_insert(Wire{net: gate.net_in_a, fanout: vec![], wiretype: WireType::Net, level: gate.output});
+                    let outnet = wires.entry(netout).or_insert(Wire {
+                        net: gate.net_in_a,
+                        fanout: vec![],
+                        wiretype: WireType::Net,
+                        level: gate.output,
+                    });
 
                     outnet.level = gate.output;
 
                     evalline(outnet.net, gates, wires);
                 }
-            },
+            }
             Gates::NOR(ref mut gate) => {
                 let neta = gate.net_in_a;
                 let netb = gate.net_in_b;
@@ -603,74 +612,95 @@ fn evalline(currentwire: u32, gates: &mut GateStack, wires: &mut HashMap<u32,Wir
                 gate.input_a = wires.get(&neta).unwrap().level;
                 gate.input_b = wires.get(&netb).unwrap().level;
 
-                if gate.input_a != FiveLogic::X && gate.input_b != FiveLogic::X && output == FiveLogic::X {                   
-                    
+                if gate.input_a != FiveLogic::X
+                    && gate.input_b != FiveLogic::X
+                    && output == FiveLogic::X
+                {
                     gate.eval();
 
-                    let outnet = wires.entry(netout)
-                                        .or_insert(Wire{net: gate.net_in_a, fanout: vec![], wiretype: WireType::Net, level: gate.output});
+                    let outnet = wires.entry(netout).or_insert(Wire {
+                        net: gate.net_in_a,
+                        fanout: vec![],
+                        wiretype: WireType::Net,
+                        level: gate.output,
+                    });
 
                     outnet.level = gate.output;
 
                     evalline(outnet.net, gates, wires);
                 }
-            },
+            }
             Gates::INV(ref mut gate) => {
                 let neta = gate.net_in_a;
                 let netout = gate.net_out;
                 let output = gate.output;
 
                 gate.input_a = wires.get(&neta).unwrap().level;
-                
-                if gate.input_a != FiveLogic::X || output == FiveLogic::X {                   
-                    
+
+                if gate.input_a != FiveLogic::X || output == FiveLogic::X {
                     gate.eval();
 
-                    let outnet = wires.entry(netout)
-                                        .or_insert(Wire{net: gate.net_in_a, fanout: vec![], wiretype: WireType::Net, level: gate.output});
+                    let outnet = wires.entry(netout).or_insert(Wire {
+                        net: gate.net_in_a,
+                        fanout: vec![],
+                        wiretype: WireType::Net,
+                        level: gate.output,
+                    });
 
                     outnet.level = gate.output;
 
                     evalline(outnet.net, gates, wires);
                 }
-            },
+            }
             Gates::BUF(ref mut gate) => {
                 let neta = gate.net_in_a;
                 let netout = gate.net_out;
                 let output = gate.output;
 
                 gate.input_a = wires.get(&neta).unwrap().level;
-                
-                if gate.input_a != FiveLogic::X || output == FiveLogic::X {                   
-                    
+
+                if gate.input_a != FiveLogic::X || output == FiveLogic::X {
                     gate.eval();
 
-                    let outnet = wires.entry(netout)
-                                        .or_insert(Wire{net: gate.net_in_a, fanout: vec![], wiretype: WireType::Net, level: gate.output});
+                    let outnet = wires.entry(netout).or_insert(Wire {
+                        net: gate.net_in_a,
+                        fanout: vec![],
+                        wiretype: WireType::Net,
+                        level: gate.output,
+                    });
 
                     outnet.level = gate.output;
 
                     evalline(outnet.net, gates, wires);
                 }
-            },
+            }
         }
     }
-    
-
 }
 
-pub fn logic (gates: &mut GateStack, wires: &mut HashMap<u32, Wire>, inputs: Vec<u32>, outputs: Vec<u32>, inputvec: Vec<u8>) {
+pub fn logic(
+    gates: &mut GateStack,
+    wires: &mut HashMap<u32, Wire>,
+    inputs: Vec<u32>,
+    outputs: Vec<u32>,
+    inputvec: Vec<u8>,
+) {
     let mut m: usize = 0;
 
     for ins in &inputs {
-        let wire = wires.entry(*ins).or_insert(Wire{net: *ins, fanout: vec![], wiretype: WireType::Net, level: FiveLogic::X});
+        let wire = wires.entry(*ins).or_insert(Wire {
+            net: *ins,
+            fanout: vec![],
+            wiretype: WireType::Net,
+            level: FiveLogic::X,
+        });
 
         match inputvec[m] {
             0 => wire.level = FiveLogic::ZERO,
             1 => wire.level = FiveLogic::ONE,
-            _ => wire.level = FiveLogic::X, 
+            _ => wire.level = FiveLogic::X,
         }
-        
+
         m += 1;
     }
 
@@ -687,16 +717,15 @@ pub fn logic (gates: &mut GateStack, wires: &mut HashMap<u32, Wire>, inputs: Vec
         }
 
         if terminate {
-            break
+            break;
         }
-
     }
 
     println!("");
     println!("Circuit outputs:");
 
     for o in &outputs {
-        print!("{} ",o);
+        print!("{} ", o);
     }
 
     println!("");
@@ -717,13 +746,12 @@ pub fn logic (gates: &mut GateStack, wires: &mut HashMap<u32, Wire>, inputs: Vec
         //println!("Net {:?} value is {:?}",*o,outnet.level);
     }
     println!("");
-
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn and_0_b() {
         let mut gate = ANDGate {
@@ -734,11 +762,11 @@ mod tests {
             net_in_b: 0,
             net_out: 0,
         };
-        
+
         gate.eval();
 
-        assert_eq!(gate.output,FiveLogic::ZERO);
-        assert_ne!(gate.output,FiveLogic::X);
+        assert_eq!(gate.output, FiveLogic::ZERO);
+        assert_ne!(gate.output, FiveLogic::X);
     }
 
     #[test]
@@ -751,11 +779,11 @@ mod tests {
             net_in_b: 0,
             net_out: 0,
         };
-        
+
         gate.eval();
 
-        assert_eq!(gate.output,FiveLogic::ZERO);
-        assert_ne!(gate.output,FiveLogic::X);
+        assert_eq!(gate.output, FiveLogic::ZERO);
+        assert_ne!(gate.output, FiveLogic::X);
     }
 
     #[test]
@@ -768,11 +796,11 @@ mod tests {
             net_in_b: 0,
             net_out: 0,
         };
-        
+
         gate.eval();
 
-        assert_eq!(gate.output,gate.input_b);
-        assert_ne!(gate.output,FiveLogic::X);
+        assert_eq!(gate.output, gate.input_b);
+        assert_ne!(gate.output, FiveLogic::X);
     }
 
     #[test]
@@ -785,12 +813,12 @@ mod tests {
             net_in_b: 0,
             net_out: 0,
         };
-        
+
         gate.eval();
 
-        assert_eq!(gate.output,gate.input_a);
-        assert_ne!(gate.output,FiveLogic::X);
-    }    
+        assert_eq!(gate.output, gate.input_a);
+        assert_ne!(gate.output, FiveLogic::X);
+    }
 
     #[test]
     fn and_x_b() {
@@ -802,11 +830,11 @@ mod tests {
             net_in_b: 0,
             net_out: 0,
         };
-        
+
         gate.eval();
 
-        assert_eq!(gate.output,FiveLogic::X);
-        assert_ne!(gate.output,FiveLogic::ONE);
+        assert_eq!(gate.output, FiveLogic::X);
+        assert_ne!(gate.output, FiveLogic::ONE);
     }
 
     #[test]
@@ -819,11 +847,11 @@ mod tests {
             net_in_b: 0,
             net_out: 0,
         };
-        
+
         gate.eval();
 
-        assert_eq!(gate.output,FiveLogic::ZERO);
-        assert_ne!(gate.output,FiveLogic::ONE);
+        assert_eq!(gate.output, FiveLogic::ZERO);
+        assert_ne!(gate.output, FiveLogic::ONE);
     }
 
     #[test]
@@ -836,11 +864,11 @@ mod tests {
             net_in_b: 0,
             net_out: 0,
         };
-        
+
         gate.eval();
 
-        assert_eq!(gate.output,FiveLogic::X);
-        assert_ne!(gate.output,FiveLogic::ONE);
+        assert_eq!(gate.output, FiveLogic::X);
+        assert_ne!(gate.output, FiveLogic::ONE);
     }
 
     #[test]
@@ -853,11 +881,11 @@ mod tests {
             net_in_b: 0,
             net_out: 0,
         };
-        
+
         gate.eval();
 
-        assert_eq!(gate.output,FiveLogic::ZERO);
-        assert_ne!(gate.output,FiveLogic::ONE);
+        assert_eq!(gate.output, FiveLogic::ZERO);
+        assert_ne!(gate.output, FiveLogic::ONE);
     }
 
     #[test]
@@ -870,11 +898,11 @@ mod tests {
             net_in_b: 0,
             net_out: 0,
         };
-        
+
         gate.eval();
 
-        assert_eq!(gate.output,FiveLogic::ZERO);
-        assert_ne!(gate.output,FiveLogic::X);
+        assert_eq!(gate.output, FiveLogic::ZERO);
+        assert_ne!(gate.output, FiveLogic::X);
     }
 
     #[test]
@@ -887,11 +915,11 @@ mod tests {
             net_in_b: 0,
             net_out: 0,
         };
-        
+
         gate.eval();
 
-        assert_eq!(gate.output,FiveLogic::Dnot);
-        assert_ne!(gate.output,FiveLogic::X);
+        assert_eq!(gate.output, FiveLogic::Dnot);
+        assert_ne!(gate.output, FiveLogic::X);
     }
 
     #[test]
@@ -904,11 +932,11 @@ mod tests {
             net_in_b: 0,
             net_out: 0,
         };
-        
+
         gate.eval();
 
-        assert_eq!(gate.output,FiveLogic::D);
-        assert_ne!(gate.output,FiveLogic::X);
+        assert_eq!(gate.output, FiveLogic::D);
+        assert_ne!(gate.output, FiveLogic::X);
     }
 
     #[test]
@@ -921,11 +949,11 @@ mod tests {
             net_in_b: 0,
             net_out: 0,
         };
-        
+
         gate.eval();
 
-        assert_eq!(gate.output,FiveLogic::ZERO);
-        assert_ne!(gate.output,FiveLogic::X);
+        assert_eq!(gate.output, FiveLogic::ZERO);
+        assert_ne!(gate.output, FiveLogic::X);
     }
 
     #[test]
@@ -939,8 +967,8 @@ mod tests {
 
         gate.eval();
 
-        assert_eq!(gate.output,invert(&gate.input_a));
-        assert_ne!(gate.output,gate.input_a);
+        assert_eq!(gate.output, invert(&gate.input_a));
+        assert_ne!(gate.output, gate.input_a);
     }
 
     #[test]
@@ -954,8 +982,8 @@ mod tests {
 
         gate.eval();
 
-        assert_eq!(gate.output,invert(&gate.input_a));
-        assert_ne!(gate.output,gate.input_a);
+        assert_eq!(gate.output, invert(&gate.input_a));
+        assert_ne!(gate.output, gate.input_a);
     }
 
     #[test]
@@ -969,8 +997,8 @@ mod tests {
 
         gate.eval();
 
-        assert_eq!(gate.output,gate.input_a);
-        assert_ne!(gate.output,invert(&gate.input_a));
+        assert_eq!(gate.output, gate.input_a);
+        assert_ne!(gate.output, invert(&gate.input_a));
     }
 
     #[test]
@@ -984,8 +1012,8 @@ mod tests {
 
         gate.eval();
 
-        assert_eq!(gate.output,gate.input_a);
-        assert_ne!(gate.output,invert(&gate.input_a));
+        assert_eq!(gate.output, gate.input_a);
+        assert_ne!(gate.output, invert(&gate.input_a));
     }
 
     #[test]
@@ -998,11 +1026,11 @@ mod tests {
             net_in_b: 0,
             net_out: 0,
         };
-        
+
         gate.eval();
 
-        assert_eq!(gate.output,invert(&FiveLogic::ZERO));
-        assert_ne!(gate.output,FiveLogic::X);
+        assert_eq!(gate.output, invert(&FiveLogic::ZERO));
+        assert_ne!(gate.output, FiveLogic::X);
     }
 
     #[test]
@@ -1015,11 +1043,11 @@ mod tests {
             net_in_b: 0,
             net_out: 0,
         };
-        
+
         gate.eval();
 
-        assert_eq!(gate.output,invert(&FiveLogic::ZERO));
-        assert_ne!(gate.output,FiveLogic::X);
+        assert_eq!(gate.output, invert(&FiveLogic::ZERO));
+        assert_ne!(gate.output, FiveLogic::X);
     }
 
     #[test]
@@ -1032,11 +1060,11 @@ mod tests {
             net_in_b: 0,
             net_out: 0,
         };
-        
+
         gate.eval();
 
-        assert_eq!(gate.output,invert(&gate.input_b));
-        assert_ne!(gate.output,FiveLogic::X);
+        assert_eq!(gate.output, invert(&gate.input_b));
+        assert_ne!(gate.output, FiveLogic::X);
     }
 
     #[test]
@@ -1049,12 +1077,12 @@ mod tests {
             net_in_b: 0,
             net_out: 0,
         };
-        
+
         gate.eval();
 
-        assert_eq!(gate.output,invert(&gate.input_a));
-        assert_ne!(gate.output,FiveLogic::X);
-    }    
+        assert_eq!(gate.output, invert(&gate.input_a));
+        assert_ne!(gate.output, FiveLogic::X);
+    }
 
     #[test]
     fn nand_x_b() {
@@ -1066,11 +1094,11 @@ mod tests {
             net_in_b: 0,
             net_out: 0,
         };
-        
+
         gate.eval();
 
-        assert_eq!(gate.output,invert(&FiveLogic::X));
-        assert_ne!(gate.output,FiveLogic::ONE);
+        assert_eq!(gate.output, invert(&FiveLogic::X));
+        assert_ne!(gate.output, FiveLogic::ONE);
     }
 
     #[test]
@@ -1083,11 +1111,11 @@ mod tests {
             net_in_b: 0,
             net_out: 0,
         };
-        
+
         gate.eval();
 
-        assert_eq!(gate.output,invert(&FiveLogic::ZERO));
-        assert_ne!(gate.output,invert(&FiveLogic::ONE));
+        assert_eq!(gate.output, invert(&FiveLogic::ZERO));
+        assert_ne!(gate.output, invert(&FiveLogic::ONE));
     }
 
     #[test]
@@ -1100,11 +1128,11 @@ mod tests {
             net_in_b: 0,
             net_out: 0,
         };
-        
+
         gate.eval();
 
-        assert_eq!(gate.output,invert(&FiveLogic::X));
-        assert_ne!(gate.output,FiveLogic::ONE);
+        assert_eq!(gate.output, invert(&FiveLogic::X));
+        assert_ne!(gate.output, FiveLogic::ONE);
     }
 
     #[test]
@@ -1117,11 +1145,11 @@ mod tests {
             net_in_b: 0,
             net_out: 0,
         };
-        
+
         gate.eval();
 
-        assert_eq!(gate.output,invert(&FiveLogic::ZERO));
-        assert_ne!(gate.output,invert(&FiveLogic::ONE));
+        assert_eq!(gate.output, invert(&FiveLogic::ZERO));
+        assert_ne!(gate.output, invert(&FiveLogic::ONE));
     }
 
     #[test]
@@ -1134,11 +1162,11 @@ mod tests {
             net_in_b: 0,
             net_out: 0,
         };
-        
+
         gate.eval();
 
-        assert_eq!(gate.output,invert(&FiveLogic::ZERO));
-        assert_ne!(gate.output,FiveLogic::X);
+        assert_eq!(gate.output, invert(&FiveLogic::ZERO));
+        assert_ne!(gate.output, FiveLogic::X);
     }
 
     #[test]
@@ -1151,11 +1179,11 @@ mod tests {
             net_in_b: 0,
             net_out: 0,
         };
-        
+
         gate.eval();
 
-        assert_eq!(gate.output,invert(&FiveLogic::Dnot));
-        assert_ne!(gate.output,FiveLogic::X);
+        assert_eq!(gate.output, invert(&FiveLogic::Dnot));
+        assert_ne!(gate.output, FiveLogic::X);
     }
 
     #[test]
@@ -1168,11 +1196,11 @@ mod tests {
             net_in_b: 0,
             net_out: 0,
         };
-        
+
         gate.eval();
 
-        assert_eq!(gate.output,invert(&FiveLogic::D));
-        assert_ne!(gate.output,FiveLogic::X);
+        assert_eq!(gate.output, invert(&FiveLogic::D));
+        assert_ne!(gate.output, FiveLogic::X);
     }
 
     #[test]
@@ -1185,11 +1213,11 @@ mod tests {
             net_in_b: 0,
             net_out: 0,
         };
-        
+
         gate.eval();
 
-        assert_eq!(gate.output,invert(&FiveLogic::ZERO));
-        assert_ne!(gate.output,FiveLogic::X);
+        assert_eq!(gate.output, invert(&FiveLogic::ZERO));
+        assert_ne!(gate.output, FiveLogic::X);
     }
 
     #[test]
@@ -1202,11 +1230,11 @@ mod tests {
             net_in_b: 0,
             net_out: 0,
         };
-        
+
         gate.eval();
 
-        assert_eq!(gate.output,gate.input_b);
-        assert_ne!(gate.output,FiveLogic::X);
+        assert_eq!(gate.output, gate.input_b);
+        assert_ne!(gate.output, FiveLogic::X);
     }
 
     #[test]
@@ -1219,11 +1247,11 @@ mod tests {
             net_in_b: 0,
             net_out: 0,
         };
-        
+
         gate.eval();
 
-        assert_eq!(gate.output,gate.input_a);
-        assert_ne!(gate.output,FiveLogic::X);
+        assert_eq!(gate.output, gate.input_a);
+        assert_ne!(gate.output, FiveLogic::X);
     }
 
     #[test]
@@ -1236,11 +1264,11 @@ mod tests {
             net_in_b: 0,
             net_out: 0,
         };
-        
+
         gate.eval();
 
-        assert_eq!(gate.output,FiveLogic::ONE);
-        assert_ne!(gate.output,FiveLogic::X);
+        assert_eq!(gate.output, FiveLogic::ONE);
+        assert_ne!(gate.output, FiveLogic::X);
     }
 
     #[test]
@@ -1253,12 +1281,12 @@ mod tests {
             net_in_b: 0,
             net_out: 0,
         };
-        
+
         gate.eval();
 
-        assert_eq!(gate.output,FiveLogic::ONE);
-        assert_ne!(gate.output,FiveLogic::X);
-    }    
+        assert_eq!(gate.output, FiveLogic::ONE);
+        assert_ne!(gate.output, FiveLogic::X);
+    }
 
     #[test]
     fn or_x_b() {
@@ -1270,11 +1298,11 @@ mod tests {
             net_in_b: 0,
             net_out: 0,
         };
-        
+
         gate.eval();
 
-        assert_eq!(gate.output,FiveLogic::ONE);
-        assert_ne!(gate.output,FiveLogic::X);
+        assert_eq!(gate.output, FiveLogic::ONE);
+        assert_ne!(gate.output, FiveLogic::X);
     }
 
     #[test]
@@ -1287,11 +1315,11 @@ mod tests {
             net_in_b: 0,
             net_out: 0,
         };
-        
+
         gate.eval();
 
-        assert_eq!(gate.output,FiveLogic::X);
-        assert_ne!(gate.output,FiveLogic::ONE);
+        assert_eq!(gate.output, FiveLogic::X);
+        assert_ne!(gate.output, FiveLogic::ONE);
     }
 
     #[test]
@@ -1304,11 +1332,11 @@ mod tests {
             net_in_b: 0,
             net_out: 0,
         };
-        
+
         gate.eval();
 
-        assert_eq!(gate.output,FiveLogic::ONE);
-        assert_ne!(gate.output,FiveLogic::X);
+        assert_eq!(gate.output, FiveLogic::ONE);
+        assert_ne!(gate.output, FiveLogic::X);
     }
 
     #[test]
@@ -1321,11 +1349,11 @@ mod tests {
             net_in_b: 0,
             net_out: 0,
         };
-        
+
         gate.eval();
 
-        assert_eq!(gate.output,FiveLogic::X);
-        assert_ne!(gate.output,FiveLogic::ONE);
+        assert_eq!(gate.output, FiveLogic::X);
+        assert_ne!(gate.output, FiveLogic::ONE);
     }
 
     #[test]
@@ -1338,11 +1366,11 @@ mod tests {
             net_in_b: 0,
             net_out: 0,
         };
-        
+
         gate.eval();
 
-        assert_eq!(gate.output,FiveLogic::ONE);
-        assert_ne!(gate.output,FiveLogic::X);
+        assert_eq!(gate.output, FiveLogic::ONE);
+        assert_ne!(gate.output, FiveLogic::X);
     }
 
     #[test]
@@ -1355,11 +1383,11 @@ mod tests {
             net_in_b: 0,
             net_out: 0,
         };
-        
+
         gate.eval();
 
-        assert_eq!(gate.output,FiveLogic::Dnot);
-        assert_ne!(gate.output,FiveLogic::X);
+        assert_eq!(gate.output, FiveLogic::Dnot);
+        assert_ne!(gate.output, FiveLogic::X);
     }
 
     #[test]
@@ -1372,11 +1400,11 @@ mod tests {
             net_in_b: 0,
             net_out: 0,
         };
-        
+
         gate.eval();
 
-        assert_eq!(gate.output,FiveLogic::D);
-        assert_ne!(gate.output,FiveLogic::X);
+        assert_eq!(gate.output, FiveLogic::D);
+        assert_ne!(gate.output, FiveLogic::X);
     }
 
     #[test]
@@ -1389,11 +1417,11 @@ mod tests {
             net_in_b: 0,
             net_out: 0,
         };
-        
+
         gate.eval();
 
-        assert_eq!(gate.output,FiveLogic::ONE);
-        assert_ne!(gate.output,FiveLogic::X);
+        assert_eq!(gate.output, FiveLogic::ONE);
+        assert_ne!(gate.output, FiveLogic::X);
     }
 
     #[test]
@@ -1406,11 +1434,11 @@ mod tests {
             net_in_b: 0,
             net_out: 0,
         };
-        
+
         gate.eval();
 
-        assert_eq!(gate.output,invert(&gate.input_b));
-        assert_ne!(gate.output,invert(&FiveLogic::X));
+        assert_eq!(gate.output, invert(&gate.input_b));
+        assert_ne!(gate.output, invert(&FiveLogic::X));
     }
 
     #[test]
@@ -1423,11 +1451,11 @@ mod tests {
             net_in_b: 0,
             net_out: 0,
         };
-        
+
         gate.eval();
 
-        assert_eq!(gate.output,invert(&gate.input_a));
-        assert_ne!(gate.output,invert(&FiveLogic::X));
+        assert_eq!(gate.output, invert(&gate.input_a));
+        assert_ne!(gate.output, invert(&FiveLogic::X));
     }
 
     #[test]
@@ -1440,11 +1468,11 @@ mod tests {
             net_in_b: 0,
             net_out: 0,
         };
-        
+
         gate.eval();
 
-        assert_eq!(gate.output,invert(&FiveLogic::ONE));
-        assert_ne!(gate.output,invert(&FiveLogic::X));
+        assert_eq!(gate.output, invert(&FiveLogic::ONE));
+        assert_ne!(gate.output, invert(&FiveLogic::X));
     }
 
     #[test]
@@ -1457,12 +1485,12 @@ mod tests {
             net_in_b: 0,
             net_out: 0,
         };
-        
+
         gate.eval();
 
-        assert_eq!(gate.output,invert(&FiveLogic::ONE));
-        assert_ne!(gate.output,invert(&FiveLogic::X));
-    }    
+        assert_eq!(gate.output, invert(&FiveLogic::ONE));
+        assert_ne!(gate.output, invert(&FiveLogic::X));
+    }
 
     #[test]
     fn nor_x_b() {
@@ -1474,11 +1502,11 @@ mod tests {
             net_in_b: 0,
             net_out: 0,
         };
-        
+
         gate.eval();
 
-        assert_eq!(gate.output,FiveLogic::ZERO);
-        assert_ne!(gate.output,FiveLogic::ONE);
+        assert_eq!(gate.output, FiveLogic::ZERO);
+        assert_ne!(gate.output, FiveLogic::ONE);
     }
 
     #[test]
@@ -1491,11 +1519,11 @@ mod tests {
             net_in_b: 0,
             net_out: 0,
         };
-        
+
         gate.eval();
 
-        assert_eq!(gate.output,FiveLogic::X);
-        assert_ne!(gate.output,FiveLogic::ONE);
+        assert_eq!(gate.output, FiveLogic::X);
+        assert_ne!(gate.output, FiveLogic::ONE);
     }
 
     #[test]
@@ -1508,11 +1536,11 @@ mod tests {
             net_in_b: 0,
             net_out: 0,
         };
-        
+
         gate.eval();
 
-        assert_eq!(gate.output,FiveLogic::ZERO);
-        assert_ne!(gate.output,FiveLogic::ONE);
+        assert_eq!(gate.output, FiveLogic::ZERO);
+        assert_ne!(gate.output, FiveLogic::ONE);
     }
 
     #[test]
@@ -1525,11 +1553,11 @@ mod tests {
             net_in_b: 0,
             net_out: 0,
         };
-        
+
         gate.eval();
 
-        assert_eq!(gate.output,invert(&FiveLogic::X));
-        assert_ne!(gate.output,invert(&FiveLogic::ONE));
+        assert_eq!(gate.output, invert(&FiveLogic::X));
+        assert_ne!(gate.output, invert(&FiveLogic::ONE));
     }
 
     #[test]
@@ -1542,11 +1570,11 @@ mod tests {
             net_in_b: 0,
             net_out: 0,
         };
-        
+
         gate.eval();
 
-        assert_eq!(gate.output,invert(&FiveLogic::ONE));
-        assert_ne!(gate.output,FiveLogic::X);
+        assert_eq!(gate.output, invert(&FiveLogic::ONE));
+        assert_ne!(gate.output, FiveLogic::X);
     }
 
     #[test]
@@ -1559,11 +1587,11 @@ mod tests {
             net_in_b: 0,
             net_out: 0,
         };
-        
+
         gate.eval();
 
-        assert_eq!(gate.output,invert(&FiveLogic::Dnot));
-        assert_ne!(gate.output,FiveLogic::X);
+        assert_eq!(gate.output, invert(&FiveLogic::Dnot));
+        assert_ne!(gate.output, FiveLogic::X);
     }
 
     #[test]
@@ -1576,11 +1604,11 @@ mod tests {
             net_in_b: 0,
             net_out: 0,
         };
-        
+
         gate.eval();
 
-        assert_eq!(gate.output,invert(&FiveLogic::D));
-        assert_ne!(gate.output,FiveLogic::X);
+        assert_eq!(gate.output, invert(&FiveLogic::D));
+        assert_ne!(gate.output, FiveLogic::X);
     }
 
     #[test]
@@ -1593,11 +1621,10 @@ mod tests {
             net_in_b: 0,
             net_out: 0,
         };
-        
+
         gate.eval();
 
-        assert_eq!(gate.output,invert(&FiveLogic::ONE));
-        assert_ne!(gate.output,FiveLogic::X);
+        assert_eq!(gate.output, invert(&FiveLogic::ONE));
+        assert_ne!(gate.output, FiveLogic::X);
     }
-
 }
