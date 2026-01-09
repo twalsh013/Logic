@@ -99,8 +99,23 @@ jobs:
     - name: Build release binary
       run: cargo build --release --verbose
 
+    - name: List release directory contents
+      run: |
+        echo "Contents of target/release:"
+        ls -lh target/release/
+        echo ""
+        echo "Looking for executable files:"
+        find target/release -maxdepth 1 -type f -executable
+
     - name: Verify binary exists
-      run: ls -lh target/release/logic
+      run: |
+        if [ -f "target/release/logic" ]; then
+          ls -lh target/release/logic
+          echo "Binary found successfully"
+        else
+          echo "ERROR: Binary not found at target/release/logic"
+          exit 1
+        fi
 
     - name: Upload executable artifact
       uses: actions/upload-artifact@v3
