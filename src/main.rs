@@ -3,7 +3,6 @@ use clap::Parser;
 
 mod gates;
 
-//use gates::{FiveLogic,Gate};
 #[derive(Parser,Debug)]
 #[command(name = "Logic Sim")]
 #[command(author = "Taylor Walsh")]
@@ -18,15 +17,7 @@ struct Args{
 }
 
 fn main() {
-
     let cli = Args::parse();
-    
-    //let mut and1 = ANDGate::new();
-
-    //and1.input_a = FiveLogic::X;
-    //and1.input_b = FiveLogic::X;
-
-    //and1.eval();
 
     let filename = cli.filename;
 

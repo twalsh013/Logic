@@ -34,22 +34,15 @@ pub struct Wire{
     pub fanout: Vec<u32>,
     pub wiretype: WireType,
     pub level: FiveLogic,
-    //pub level: FiveLogic,
 }
 
 fn invert(value: &FiveLogic) -> FiveLogic {
-    if *value == FiveLogic::ONE {
-        FiveLogic::ZERO
-    } else if *value == FiveLogic::ZERO {
-        FiveLogic::ONE
-    } else if *value == FiveLogic::D {
-        FiveLogic::Dnot
-    } else if *value == FiveLogic::Dnot {
-        FiveLogic::D
-    } else if *value == FiveLogic::X {
-        FiveLogic::X
-    } else {
-        FiveLogic::X
+    match value {
+        FiveLogic::ONE => FiveLogic::ZERO,
+        FiveLogic::ZERO => FiveLogic::ONE,
+        FiveLogic::D => FiveLogic::Dnot,
+        FiveLogic::Dnot => FiveLogic::D,
+        FiveLogic::X => FiveLogic::X,
     }
 }
 
@@ -64,19 +57,6 @@ pub struct ANDGate {
     pub net_out: u32,
 }
 
-/*impl ANDGate {
-    pub fn new() -> Self {
-        ANDGate {
-            input_a: FiveLogic::ZERO,
-            input_b: FiveLogic::ZERO,
-            output: FiveLogic::ZERO,
-            net_in_a: 0,
-            net_in_b: 0,
-            net_out: 0,
-        }
-    }
-}*/
-
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub struct ORGate {
     pub input_a: FiveLogic,
@@ -87,19 +67,6 @@ pub struct ORGate {
     pub net_out: u32,
 }
 
-/*impl ORGate {
-    pub fn new() -> Self {
-        ORGate {
-            input_a: FiveLogic::ZERO,
-            input_b: FiveLogic::ZERO,
-            output: FiveLogic::ZERO,
-            net_in_a: 0,
-            net_in_b: 0,
-            net_out: 0,
-        }
-    }
-}*/
-
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub struct NOTGate {
     pub input_a: FiveLogic,
@@ -107,17 +74,6 @@ pub struct NOTGate {
     pub net_in_a: u32,
     pub net_out: u32,
 }
-
-/*impl NOTGate {
-    pub fn new() -> Self {
-        NOTGate {
-            input_a: FiveLogic::ZERO,
-            output: FiveLogic::ZERO,
-            net_in_a: 0,
-            net_out: 0,
-        }
-    }
-}*/
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub struct NANDGate {
@@ -129,19 +85,6 @@ pub struct NANDGate {
     pub net_out: u32,
 }
 
-/*impl NANDGate {
-    pub fn new() -> Self {
-        NANDGate {
-            input_a: FiveLogic::ZERO,
-            input_b: FiveLogic::ZERO,
-            output: FiveLogic::ZERO,
-            net_in_a: 0,
-            net_in_b: 0,
-            net_out: 0,
-        }
-    }
-}*/
-
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub struct NORGate {
     pub input_a: FiveLogic,
@@ -152,19 +95,6 @@ pub struct NORGate {
     pub net_out: u32,
 }
 
-/*impl NORGate {
-    pub fn new() -> Self {
-        NORGate {
-            input_a: FiveLogic::ZERO,
-            input_b: FiveLogic::ZERO,
-            output: FiveLogic::ZERO,
-            net_in_a: 0,
-            net_in_b: 0,
-            net_out: 0,
-        }
-    }
-}*/
-
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub struct BUFGate {
     pub input_a: FiveLogic,
@@ -173,21 +103,8 @@ pub struct BUFGate {
     pub net_out: u32,
 }
 
-/*impl BUFGate {
-    pub fn new() -> Self {
-        BUFGate {
-            input_a: FiveLogic::ZERO,
-            output: FiveLogic::ZERO,
-            net_in_a: 0,
-            net_out: 0,
-        }
-    }
-}*/
-
-
 pub trait Gate {
     fn eval(&mut self);
-    //fn new(&self) -> Self;
 }
 
 pub struct GateStack {
@@ -544,13 +461,13 @@ fn evalline(currentwire: u32, gates: &mut GateStack, wires: &mut HashMap<u32,Wir
                     gate.eval();
 
                     let outnet = wires.entry(netout)
-                                        .or_insert(Wire{net: gate.net_in_a, fanout: vec![], wiretype: WireType::Net, level: gate.output});
+                                        .or_insert(Wire{net: netout, fanout: vec![], wiretype: WireType::Net, level: gate.output});
 
                     outnet.level = gate.output;
 
                     evalline(outnet.net, gates, wires);
 
-                }     
+                }
             },
             Gates::NAND(ref mut gate) => {
                 let neta = gate.net_in_a;
@@ -561,12 +478,12 @@ fn evalline(currentwire: u32, gates: &mut GateStack, wires: &mut HashMap<u32,Wir
                 gate.input_a = wires.get(&neta).unwrap().level;
                 gate.input_b = wires.get(&netb).unwrap().level;
 
-                if gate.input_a != FiveLogic::X && gate.input_b != FiveLogic::X && output == FiveLogic::X {                   
-                    
+                if gate.input_a != FiveLogic::X && gate.input_b != FiveLogic::X && output == FiveLogic::X {
+
                     gate.eval();
 
                     let outnet = wires.entry(netout)
-                                        .or_insert(Wire{net: gate.net_in_a, fanout: vec![], wiretype: WireType::Net, level: gate.output});
+                                        .or_insert(Wire{net: netout, fanout: vec![], wiretype: WireType::Net, level: gate.output});
 
                     outnet.level = gate.output;
 
@@ -582,12 +499,12 @@ fn evalline(currentwire: u32, gates: &mut GateStack, wires: &mut HashMap<u32,Wir
                 gate.input_a = wires.get(&neta).unwrap().level;
                 gate.input_b = wires.get(&netb).unwrap().level;
 
-                if gate.input_a != FiveLogic::X && gate.input_b != FiveLogic::X && output == FiveLogic::X {                   
-                    
+                if gate.input_a != FiveLogic::X && gate.input_b != FiveLogic::X && output == FiveLogic::X {
+
                     gate.eval();
 
                     let outnet = wires.entry(netout)
-                                        .or_insert(Wire{net: gate.net_in_a, fanout: vec![], wiretype: WireType::Net, level: gate.output});
+                                        .or_insert(Wire{net: netout, fanout: vec![], wiretype: WireType::Net, level: gate.output});
 
                     outnet.level = gate.output;
 
@@ -603,12 +520,12 @@ fn evalline(currentwire: u32, gates: &mut GateStack, wires: &mut HashMap<u32,Wir
                 gate.input_a = wires.get(&neta).unwrap().level;
                 gate.input_b = wires.get(&netb).unwrap().level;
 
-                if gate.input_a != FiveLogic::X && gate.input_b != FiveLogic::X && output == FiveLogic::X {                   
-                    
+                if gate.input_a != FiveLogic::X && gate.input_b != FiveLogic::X && output == FiveLogic::X {
+
                     gate.eval();
 
                     let outnet = wires.entry(netout)
-                                        .or_insert(Wire{net: gate.net_in_a, fanout: vec![], wiretype: WireType::Net, level: gate.output});
+                                        .or_insert(Wire{net: netout, fanout: vec![], wiretype: WireType::Net, level: gate.output});
 
                     outnet.level = gate.output;
 
@@ -621,13 +538,13 @@ fn evalline(currentwire: u32, gates: &mut GateStack, wires: &mut HashMap<u32,Wir
                 let output = gate.output;
 
                 gate.input_a = wires.get(&neta).unwrap().level;
-                
-                if gate.input_a != FiveLogic::X || output == FiveLogic::X {                   
-                    
+
+                if gate.input_a != FiveLogic::X && output == FiveLogic::X {
+
                     gate.eval();
 
                     let outnet = wires.entry(netout)
-                                        .or_insert(Wire{net: gate.net_in_a, fanout: vec![], wiretype: WireType::Net, level: gate.output});
+                                        .or_insert(Wire{net: netout, fanout: vec![], wiretype: WireType::Net, level: gate.output});
 
                     outnet.level = gate.output;
 
@@ -640,13 +557,13 @@ fn evalline(currentwire: u32, gates: &mut GateStack, wires: &mut HashMap<u32,Wir
                 let output = gate.output;
 
                 gate.input_a = wires.get(&neta).unwrap().level;
-                
-                if gate.input_a != FiveLogic::X || output == FiveLogic::X {                   
-                    
+
+                if gate.input_a != FiveLogic::X && output == FiveLogic::X {
+
                     gate.eval();
 
                     let outnet = wires.entry(netout)
-                                        .or_insert(Wire{net: gate.net_in_a, fanout: vec![], wiretype: WireType::Net, level: gate.output});
+                                        .or_insert(Wire{net: netout, fanout: vec![], wiretype: WireType::Net, level: gate.output});
 
                     outnet.level = gate.output;
 
@@ -655,11 +572,16 @@ fn evalline(currentwire: u32, gates: &mut GateStack, wires: &mut HashMap<u32,Wir
             },
         }
     }
-    
+
 
 }
 
 pub fn logic (gates: &mut GateStack, wires: &mut HashMap<u32, Wire>, inputs: Vec<u32>, outputs: Vec<u32>, inputvec: Vec<u8>) {
+    if inputvec.len() < inputs.len() {
+        eprintln!("Error: Input vector length ({}) is less than number of inputs ({})", inputvec.len(), inputs.len());
+        return;
+    }
+
     let mut m: usize = 0;
 
     for ins in &inputs {
@@ -668,9 +590,9 @@ pub fn logic (gates: &mut GateStack, wires: &mut HashMap<u32, Wire>, inputs: Vec
         match inputvec[m] {
             0 => wire.level = FiveLogic::ZERO,
             1 => wire.level = FiveLogic::ONE,
-            _ => wire.level = FiveLogic::X, 
+            _ => wire.level = FiveLogic::X,
         }
-        
+
         m += 1;
     }
 
